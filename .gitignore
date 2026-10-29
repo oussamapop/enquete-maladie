@@ -1,0 +1,19 @@
+# Raw CDC dataset — download separately
+data/LLCP2022.ASC
+data/LLCP2022ASC.zip
+
+# Python cache
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Logs and temporary files
+logs/*
+*.log
+*.tmp
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db
