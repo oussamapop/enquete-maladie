@@ -4,32 +4,32 @@
 
 This project explores Type 2 diabetes using data from the 2022 Behavioral Risk Factor Surveillance System (BRFSS), published by the Centers for Disease Control and Prevention (CDC).
 
-The main objective is to study descriptive relationships between Type 2 diabetes, age groups, and Body Mass Index (BMI) categories.
+The main objective is to examine descriptive relationships between Type 2 diabetes, age groups, and Body Mass Index (BMI) categories.
 
-The project uses Bash, AWK, Python, Pandas, and Matplotlib to process a large fixed-width dataset, calculate descriptive statistics, and produce graphical visualizations.
+The project combines Bash, AWK, Python, Pandas, NumPy, and Matplotlib to process a large fixed-width dataset, calculate descriptive statistics, generate visualizations, and validate analysis results.
 
-The work follows a reproducible data-analysis workflow, from inspecting the original dataset to generating and validating summary files.
+The project follows a data-analysis workflow, from inspecting the original dataset to producing and validating summary files.
+
+This is an exploratory descriptive study. It does not aim to establish causal relationships.
 
 ## 2. Research Objectives
 
-The project has the following objectives:
+The project aims to:
 
 - Explore diabetes-related responses in the BRFSS 2022 dataset.
 - Distinguish respondents classified as having Type 2 diabetes from respondents reporting no diabetes.
-- Examine the distribution of classified Type 2 diabetes cases across age groups.
-- Compare BMI-category distributions between the two diabetes groups.
-- Explore the relationship between age groups, BMI categories, and Type 2 diabetes.
+- Examine the distribution of these two groups across age categories.
+- Compare BMI-category distributions between the two groups.
+- Explore the relationship between age, BMI categories, and Type 2 diabetes.
 - Produce CSV summaries and graphical visualizations.
-- Reproduce an existing analysis using different programming tools.
-- Document the methodology, limitations, and interpretation of the results.
-
-This is a descriptive exploratory study. It does not aim to establish causal relationships.
+- Reproduce an existing analysis using Python and Pandas.
+- Validate the consistency of results obtained using different tools.
 
 ## 3. Dataset
 
-The project uses the CDC BRFSS 2022 ASCII dataset.
+The project uses the CDC BRFSS 2022 combined landline and cellular telephone ASCII dataset.
 
-Official download:
+**Official dataset download:**
 
 https://www.cdc.gov/brfss/annual_data/2022/files/LLCP2022ASC.zip
 
@@ -41,33 +41,33 @@ The extracted dataset is:
 
 `data/LLCP2022.ASC`
 
-The dataset contains approximately 445,132 respondent records. Each record is stored using a fixed-width format, with a record length of approximately 2,052 characters.
+The dataset contains 445,132 respondent records. Each record uses a fixed-width format, with approximately 2,052 characters.
 
-Unlike a CSV file, the ASCII dataset does not separate its variables using commas. Each variable is stored at a documented character position.
+Unlike a CSV file, variables are stored at specific character positions rather than separated by commas.
 
-The raw dataset and ZIP archive are excluded from Git because of their size. To reproduce the analyses, download the archive from the official CDC source, extract it, and place the ASCII file inside the `data/` directory.
+The raw dataset is excluded from Git because of its large size. Anyone wishing to reproduce the analysis must download the official archive, extract it, and place `LLCP2022.ASC` inside the project's `data/` directory.
 
 ## 4. Tools and Technologies
 
-- **Git Bash / Bash** — command-line navigation, file management, and data exploration.
-- **AWK** — extracting fields from fixed-width records and calculating descriptive summaries.
-- **Python** — data processing, validation, and visualization.
-- **Pandas** — reading, filtering, grouping, and comparing datasets.
-- **NumPy** — numerical computing support.
-- **Matplotlib** — generating graphical visualizations.
-- **Git and GitHub** — version control and project management.
+- **Bash / Git Bash:** Command-line navigation, file management, and data exploration.
+- **AWK:** Processing fixed-width records and calculating descriptive summaries.
+- **Python:** Data processing, validation, and visualization.
+- **Pandas:** Reading, filtering, grouping, and comparing datasets.
+- **NumPy:** Numerical computing.
+- **Matplotlib:** Generating graphical visualizations.
+- **Git and GitHub:** Version control and project management.
 
 ## 5. Data Preparation and Variables
 
 ### 5.1 Fixed-width data format
 
-The original BRFSS ASCII file uses fixed-width records.
+The BRFSS ASCII dataset uses fixed-width records.
 
-The positions of the variables were identified using the CDC variable layout documentation:
+The variable positions were identified using the CDC variable layout documentation:
 
 `docs/variable_layout.html`
 
-The main variables used in the project are:
+The main variables used are:
 
 | Variable   | Description                   |
 | ---------- | ----------------------------- |
@@ -78,7 +78,7 @@ The main variables used in the project are:
 | `_BMI5CAT` | BMI category                  |
 | `_RFBMI5`  | BMI-related derived indicator |
 
-The Python implementation uses the following zero-based character intervals to extract the main fields:
+The Python implementation extracts the following fields using zero-based character intervals:
 
 | Field      | Character interval |
 | ---------- | ------------------ |
@@ -88,48 +88,72 @@ The Python implementation uses the following zero-based character intervals to e
 | `_AGEG5YR` | `(1980, 1982)`     |
 | `_BMI5CAT` | `(2001, 2002)`     |
 
-These intervals follow Python's slicing convention: the starting position is included and the ending position is excluded.
+The starting position is included and the ending position is excluded, following Python's slicing convention.
 
 ### 5.2 Diabetes classification
 
-For the main comparison, the project uses the following response classification:
+The main comparison uses two groups:
 
 - **Type 2 diabetes:** `DIABETE4 = 1` and `DIABTYPE = 2`.
 - **No diabetes:** `DIABETE4 = 3`.
 
 Other responses, including other diabetes classifications, unknown responses, refused responses, and missing values, are excluded from this two-group comparison.
 
-These classifications must be interpreted according to the official CDC questionnaire and codebook.
+The classification is based on the response codes in the BRFSS dataset.
 
 ### 5.3 Age and BMI categories
 
-For the age-stratified analysis:
+For the age analysis:
 
 - Age codes `01` to `13` are retained.
 - Age code `14` and other values are excluded.
 
-For the age-and-BMI analysis, the following BMI category codes are retained:
+For the BMI analysis, the following `_BMI5CAT` codes are retained:
 
-- `1`
-- `2`
-- `3`
-- `4`
+| Code | BMI category  |
+| ---- | ------------- |
+| 1    | Underweight   |
+| 2    | Normal weight |
+| 3    | Overweight    |
+| 4    | Obese         |
 
-Only records satisfying the selected state, age, BMI, and diabetes-group criteria are included in the corresponding comparison.
+Only records satisfying the relevant selection and classification criteria are included in each analysis.
 
-### 5.4 Selected states
+### 5.4 Selected states and territories
 
-The age-and-BMI analysis uses the following state or territory codes:
+The analysis is restricted to 13 reporting areas:
 
-`10, 13, 18, 23, 28, 29, 32, 38, 45, 46, 50, 55, 78`
+| State or territory  | BRFSS code |
+| ------------------- | ---------- |
+| Delaware            | 10         |
+| Georgia             | 13         |
+| Indiana             | 18         |
+| Maine               | 23         |
+| Mississippi         | 28         |
+| Missouri            | 29         |
+| Nevada              | 32         |
+| North Dakota        | 38         |
+| South Carolina      | 45         |
+| South Dakota        | 46         |
+| Vermont             | 50         |
+| Wisconsin           | 55         |
+| U.S. Virgin Islands | 78         |
 
-The full dataset contains 445,132 records. The selected codes account for 92,432 records.
+These reporting areas were selected because the 2022 BRFSS Diabetes optional module was administered in these areas.
 
-The reason for selecting this subset and its relationship to diabetes-type data availability must be documented and validated against the official CDC documentation before making population-level interpretations.
+The diabetes-type question (`DIABTYPE`) was needed to distinguish Type 2 diabetes from other diabetes categories. Therefore, the analysis was restricted to the reporting areas where the relevant Diabetes module data were available.
+
+CDC documentation:
+
+https://www.cdc.gov/brfss/questionnaires/modules/category2022.htm
+
+The selected areas account for 92,432 records in the dataset.
+
+The findings describe the selected reporting areas and should not be generalized to all US states or the entire US population.
 
 ## 6. Analysis Workflow
 
-### 6.1 Bash and AWK exploration
+### 6.1 Bash and AWK data exploration
 
 Bash and AWK were used to explore and process the original ASCII dataset.
 
@@ -137,105 +161,98 @@ The work included:
 
 - Inspecting the dataset's record length and number of records.
 - Examining diabetes response codes.
-- Exploring missing diabetes-type responses.
-- Investigating state and territory coverage.
+- Investigating the availability of diabetes-type responses.
+- Identifying the relevant state and territory codes.
 - Counting respondents by age group and BMI category.
 - Calculating descriptive percentages.
-- Checking the consistency of calculated percentages.
 - Identifying groups with fewer than 20 classified Type 2 diabetes cases.
 
-### 6.2 Age and diabetes
+The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts.
+
+### 6.2 Age and diabetes analysis
 
 Output:
 
 `results/age_diabetes.csv`
 
-This file contains an age-group summary of respondents classified as having Type 2 diabetes and respondents classified as having no diabetes.
+This file summarizes the number of respondents classified as having Type 2 diabetes and respondents reporting no diabetes across age groups.
 
-It provides a descriptive comparison of the two groups across age categories.
+It provides a descriptive comparison of the two groups by age.
 
-### 6.3 BMI and diabetes
+### 6.3 BMI and diabetes analysis
 
 Output:
 
 `results/bmi_diabetes_comparison.csv`
 
-This file compares the distribution of BMI categories between the classified Type 2 diabetes and no-diabetes groups.
+This file compares the distribution of BMI categories between the Type 2 diabetes and no-diabetes groups.
 
 It contains the group, BMI category, count, percentage, and total number of valid BMI records used for the corresponding group.
 
-### 6.4 Age, BMI, and diabetes
+### 6.4 Age, BMI, and diabetes analysis
 
 Output:
 
 `results/age_bmi_diabetes.csv`
 
-This file combines age groups and BMI categories to examine their relationship with classified Type 2 diabetes.
+This file combines age groups and BMI categories.
 
 Each row represents one age-and-BMI combination and contains:
 
-- `age_code`: age-group code.
+- `age_code`: Age-group code.
 - `bmi_category`: BMI category.
-- `type2_count`: number of classified Type 2 diabetes cases.
-- `no_diabetes_count`: number of respondents classified as having no diabetes.
-- `total`: total number of records in the two groups.
-- `percentage`: descriptive Type 2 diabetes percentage.
-- `small_case_count`: indicates whether the Type 2 diabetes count is below 20.
+- `type2_count`: Number of classified Type 2 diabetes cases.
+- `no_diabetes_count`: Number of respondents reporting no diabetes.
+- `total`: Total number of records in the two groups.
+- `percentage`: Descriptive Type 2 diabetes percentage.
+- `small_case_count`: Indicates whether the Type 2 diabetes count is below 20.
 
 The percentage is calculated as:
 
 `Type 2 cases / (Type 2 cases + No-diabetes cases) × 100`
 
-This percentage describes the proportion of Type 2 diabetes cases among the two included groups within each age-and-BMI combination.
-
-It is not an estimate of diabetes prevalence in the entire BRFSS population.
+This percentage describes the proportion of Type 2 diabetes cases among the two included groups within each age-and-BMI combination. It is not an estimate of diabetes prevalence in the entire population.
 
 ### 6.5 Python reproduction and validation
 
 The age-and-BMI analysis was reproduced using Python and Pandas.
 
-The Python implementation reads the original fixed-width dataset in chunks rather than loading the entire dataset into memory.
+The script:
 
-This approach reduces memory usage when processing the large ASCII file.
+`scripts/reproduce_age_bmi_diabetes.py`
 
-Python output:
+reads the original fixed-width dataset in chunks of 50,000 records to reduce memory usage.
+
+The Python-generated output is:
 
 `results/age_bmi_diabetes_python.csv`
 
-The Python-generated CSV was compared with the original AWK-generated file:
+This file was compared with the original AWK-generated output:
 
 `results/age_bmi_diabetes.csv`
 
-Both files contained 52 age-and-BMI groups and produced identical values.
+Both files contain 52 age-and-BMI groups and have identical values across all seven columns.
 
-The comparison confirmed consistency between the two implementations for:
-
-- Type 2 diabetes counts.
-- No-diabetes counts.
-- Total records.
-- Calculated percentages.
-- Small-group indicators.
-
-This validation confirms that the Python implementation reproduces the AWK results. It does not independently validate the scientific classification rules, variable definitions, or sampling methodology.
+This confirms that the Python implementation reproduces the existing AWK results. It does not independently validate the scientific classification rules or the survey methodology.
 
 ## 7. Results Summary
 
-During the Python processing of the complete dataset, the following counts were obtained using the current selection criteria:
+The Python analysis produced the following results using the project's selection criteria:
 
-| Description                                    |   Count |
-| ---------------------------------------------- | ------: |
-| Total dataset records                          | 445,132 |
-| Records in selected states or territories      |  92,432 |
-| Records included in the age-and-BMI comparison |  76,519 |
-| Classified Type 2 diabetes cases               |   9,393 |
-| Respondents classified as having no diabetes   |  67,126 |
-| Age-and-BMI groups                             |      52 |
+| Description                                          |   Count |
+| ---------------------------------------------------- | ------: |
+| Total dataset records                                | 445,132 |
+| Records in selected reporting areas                  |  92,432 |
+| Valid records included in the age-and-BMI comparison |  76,519 |
+| Classified Type 2 diabetes cases                     |   9,393 |
+| Respondents reporting no diabetes                    |  67,126 |
+| Age-and-BMI groups                                   |      52 |
 
-These figures describe the records retained by the project's current filters. They should not be interpreted as official CDC prevalence estimates.
+These figures describe the records retained by the project's filters. They are not official CDC population prevalence estimates.
 
 ## 8. Visualizations
 
-Python, Pandas, and Matplotlib are used to generate the project's graphical visualizations.
+Python, Pandas, and Matplotlib are used to generate two graphical visualizations.
 
 ### 8.1 Obesity and age
 
@@ -261,24 +278,25 @@ Generated by:
 
 `scripts/plot_bmi_age_comparison.py`
 
-This graph compares the descriptive Type 2 diabetes percentage across the four BMI categories and different age groups.
+This graph compares the descriptive Type 2 diabetes percentage across four BMI categories and different age groups.
 
 All available groups are displayed. An `x` marker identifies groups with fewer than 20 classified Type 2 diabetes cases.
 
-The threshold of 20 cases is an exploratory display choice. It is not a formal statistical reliability standard.
+The threshold of 20 cases is an exploratory display choice, not a formal statistical reliability standard.
 
 ## 9. Project Structure
 
-The current project structure is organized as follows:
+The project is organized as follows:
 
 ```text
 enquete-maladie/
+│
 ├── data/
-│   ├── LLCP2022ASC.zip              # Original archive (not tracked)
-│   └── LLCP2022.ASC                 # Extracted dataset (not tracked)
+│   ├── LLCP2022ASC.zip
+│   └── LLCP2022.ASC
 │
 ├── docs/
-│   └── variable_layout.html         # CDC variable documentation
+│   └── variable_layout.html
 │
 ├── results/
 │   ├── age_diabetes.csv
@@ -289,37 +307,56 @@ enquete-maladie/
 │   └── bmi_age_comparison.png
 │
 ├── scripts/
+│   ├── reproduce_age_bmi_diabetes.py
 │   ├── plot_obesity_age.py
 │   └── plot_bmi_age_comparison.py
 │
 ├── tests/
-├── logs/
-├── archive/
+│   └── test_analysis.py
+│
+├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
 
-The Python reproduction CSV is retained separately to make the comparison with the AWK-generated result reproducible.
+The raw dataset and downloaded archive are excluded from Git.
 
-## 10. Requirements and Execution
+## 10. Installation and Execution
 
-### 10.1 Python requirements
+### 10.1 Requirements
 
-The project uses Python and the following libraries:
+The project requires Python and the libraries listed in:
 
-- Pandas
-- NumPy
-- Matplotlib
+`requirements.txt`
 
-Install the required packages using:
+Install all dependencies from the project root directory:
 
 ```bash
-python -m pip install pandas numpy matplotlib
+python -m pip install -r requirements.txt
 ```
 
-### 10.2 Running the visualization scripts
+### 10.2 Dataset preparation
 
-Run the following commands from the project root directory.
+1. Download the BRFSS 2022 ASCII archive from the official CDC website.
+2. Extract the archive.
+3. Place `LLCP2022.ASC` inside the `data/` directory.
+4. Ensure that `docs/variable_layout.html` is available in the project.
+
+The raw dataset is not included in the GitHub repository because of its size.
+
+### 10.3 Reproduce the age-and-BMI analysis
+
+From the project root directory, execute:
+
+```bash
+python scripts/reproduce_age_bmi_diabetes.py
+```
+
+This generates:
+
+`results/age_bmi_diabetes_python.csv`
+
+### 10.4 Generate the visualizations
 
 Generate the obesity-by-age graph:
 
@@ -333,68 +370,99 @@ Generate the age-and-BMI comparison graph:
 python scripts/plot_bmi_age_comparison.py
 ```
 
-Both scripts save their generated images inside the `results/` directory.
+Both scripts save their images in the `results/` directory.
 
-The CSV summaries were produced during the project's data-processing work. The visualization commands above regenerate the corresponding graphs from the data expected by each script.
+The age and BMI summary CSV files produced by the original interactive AWK workflow are retained as project outputs. Their original extraction commands are not currently available as standalone scripts.
+
+### 10.5 Run automated tests
+
+Execute:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests verify:
+
+- The expected CSV columns.
+- The number of age-and-BMI groups.
+- Valid age categories.
+- Valid BMI categories.
+- Correct total calculations.
+- Correct percentage calculations.
+- Correct small-case classification.
+- Overall Type 2 and no-diabetes counts.
+- Consistency between AWK and Python outputs.
+
+The current test suite contains nine tests.
 
 ## 11. Limitations and Responsible Interpretation
 
-The results must be interpreted with the following limitations in mind:
+The findings must be interpreted with the following limitations:
 
 - **Exploratory analysis:** The project focuses on descriptive statistics and visual comparisons.
-- **Unweighted data:** The analyses do not apply BRFSS survey weights. The percentages are not official CDC weighted prevalence estimates.
-- **Selected records:** Some analyses use a subset of state or territory codes. The selection criteria and coverage require validation against the official CDC documentation.
-- **Restricted denominator:** The age-and-BMI percentage includes only respondents classified as Type 2 diabetes or no diabetes.
-- **Excluded responses:** Other diabetes classifications, unknown diabetes types, refused answers, and missing values are not included in the main comparison.
-- **Small groups:** Percentages based on small numbers of Type 2 diabetes cases may be unstable. The fewer-than-20 indicator is a descriptive warning, not a formal reliability measure.
+- **Unweighted analysis:** The calculations do not apply BRFSS survey weights. The percentages are not official CDC weighted prevalence estimates.
+- **Restricted geographic coverage:** The analysis uses 13 reporting areas where the Diabetes optional module was available. It does not represent all US states and territories.
+- **Restricted denominator:** The age-and-BMI percentage includes only respondents classified as having Type 2 diabetes or no diabetes.
+- **Excluded responses:** Other diabetes classifications, unknown diabetes types, refused answers, and missing or invalid age and BMI values are excluded from the relevant comparisons.
+- **Small groups:** Percentages based on small numbers of Type 2 diabetes cases may be unstable. The fewer-than-20 indicator is a descriptive warning, not a formal statistical reliability measure.
 - **No causal conclusions:** Observed relationships between age, BMI, and diabetes do not demonstrate that one variable causes another.
-- **Population generalization:** The findings should not be generalized to the entire US population or to other populations without an appropriate analysis of the BRFSS sampling design, survey weights, and selection criteria.
+- **Population generalization:** The results should not be generalized to the entire US population without an appropriate analysis of the BRFSS sampling design, survey weights, and geographic coverage.
 
-## 12. Current Project Status
+## 12. Project Status
 
 ### Completed
 
 - Downloaded and inspected the CDC BRFSS 2022 ASCII dataset.
 - Examined the fixed-width record structure.
-- Located the main variables using the CDC variable layout documentation.
-- Explored diabetes response codes and missing values.
-- Investigated state and territory coverage.
-- Produced CSV summaries for age, BMI, and their combination.
-- Checked the consistency of calculated percentages.
+- Located the main variables using CDC documentation.
+- Explored diabetes response codes and data availability.
+- Identified the 13 reporting areas using the Diabetes module.
+- Produced age, BMI, and combined age-and-BMI CSV summaries.
 - Created two Python visualization scripts.
 - Generated and saved two graphical visualizations.
 - Reproduced the age-and-BMI analysis using Python and Pandas.
-- Compared AWK and Python outputs and confirmed identical results.
+- Confirmed that the AWK and Python outputs are identical.
+- Added Python dependencies in `requirements.txt`.
+- Created nine automated tests and confirmed that all nine pass.
+- Documented the methodology and statistical limitations.
 
-### Remaining documentation and validation work
+### Final repository tasks
 
-- Validate variable positions and response codes against the official CDC documentation.
-- Confirm the exact reason for the selected state and territory subset.
-- Document the exact selection criteria used by each analysis.
-- Review the final repository contents and ensure that unnecessary or large raw data files are excluded.
-- Complete the final interpretation and presentation of the results.
+- Review the final Git status.
+- Commit and push the latest project files.
+- Merge the `analysis-improvements` branch into `main`.
+- Verify that the final GitHub repository contains the expected files.
 
-## 13. Data Source and References
+## 13. Data Sources and References
 
-Centers for Disease Control and Prevention (CDC).
+**Centers for Disease Control and Prevention (CDC).**
 
-**Behavioral Risk Factor Surveillance System (BRFSS), 2022 Annual Data.**
+Behavioral Risk Factor Surveillance System (BRFSS), 2022 Annual Data.
 
 Official dataset:
 
 https://www.cdc.gov/brfss/annual_data/2022/files/LLCP2022ASC.zip
 
-CDC BRFSS official information:
+2022 BRFSS data and documentation:
 
-https://www.cdc.gov/brfss/
+https://www.cdc.gov/brfss/annual_data/annual_2022.html
 
-The dataset and its official documentation are the primary sources for the variables and responses used in this project.
+2022 BRFSS modules by category:
+
+https://www.cdc.gov/brfss/questionnaires/modules/category2022.htm
+
+2022 BRFSS questionnaires:
+
+https://www.cdc.gov/brfss/questionnaires/
+
+The CDC dataset, codebook, questionnaire, and variable-layout documentation are the primary sources for the variables and responses used in this project.
 
 ## 14. Reproducibility and Validation
 
-The combined age, BMI, and diabetes analysis was independently reproduced using Python and Pandas.
+The combined age, BMI, and diabetes analysis was reproduced using Python and Pandas.
 
-The Python implementation processed the original fixed-width BRFSS 2022 dataset in chunks to reduce memory usage.
+The Python implementation processed the original fixed-width dataset in chunks to reduce memory usage.
 
 The resulting file, `results/age_bmi_diabetes_python.csv`, was compared with the original Bash/AWK output, `results/age_bmi_diabetes.csv`.
 
@@ -402,8 +470,11 @@ Validation results:
 
 - Original AWK output: 52 rows.
 - Python output: 52 rows.
-- All columns and values were identical.
+- All seven columns and their values were identical.
+- All nine automated tests passed.
 
-This confirms that the Python implementation reproduces the existing combined analysis results.
+This confirms consistency between the two implementations for the current analysis criteria.
 
-**Note:** The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts. The Python reproduction is available as a validation result, while the two saved Python scripts generate the visualizations.
+It does not independently validate the scientific assumptions, survey weighting, or statistical representativeness of the results.
+
+**Note:** The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts. The Python reproduction script is available for reproducing the combined age-and-BMI analysis from the original dataset.
