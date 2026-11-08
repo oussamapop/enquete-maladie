@@ -290,111 +290,186 @@ The project is organized as follows:
 
 ```text
 enquete-maladie/
-│
 ├── data/
-│   ├── LLCP2022ASC.zip
-│   └── LLCP2022.ASC
-│
+├── checksums/
 ├── docs/
-│   └── variable_layout.html
-│
 ├── results/
-│   ├── age_diabetes.csv
-│   ├── bmi_diabetes_comparison.csv
-│   ├── age_bmi_diabetes.csv
-│   ├── age_bmi_diabetes_python.csv
-│   ├── obesity_age.png
-│   └── bmi_age_comparison.png
-│
 ├── scripts/
-│   ├── reproduce_age_bmi_diabetes.py
-│   ├── plot_obesity_age.py
-│   └── plot_bmi_age_comparison.py
-│
 ├── tests/
-│   └── test_analysis.py
-│
+├── logs/
+├── archive/
+├── run.sh
 ├── requirements.txt
+├── SOURCES.md
 ├── .gitignore
 └── README.md
 ```
 
-The raw dataset and downloaded archive are excluded from Git.
+- `data/`: CDC dataset files (excluded from Git).
+- `checksums/`: Dataset integrity verification.
+- `docs/`: CDC variable documentation.
+- `results/`: Generated CSV files and figures.
+- `scripts/`: Python analysis and visualization scripts.
+- `tests/`: Automated tests.
+- `logs/`: Timestamped execution logs.
+- `archive/`: Compressed results archives.
 
 ## 10. Installation and Execution
 
-### 10.1 Requirements
+### 10.1 Prerequisites
 
-The project requires Python and the libraries listed in:
+The project requires the following tools:
 
-`requirements.txt`
+- Python 3
+- Bash
+- Git
+- `curl`
+- `unzip`
+- `sha256sum`
+- `tar`
+- `awk`
+- `tee`
 
-Install all dependencies from the project root directory:
+Python dependencies are listed in `requirements.txt`.
+
+### 10.2 Clone the Repository
+
+Clone the project repository:
+
+```bash
+git clone https://github.com/oussamapop/enquete-maladie.git
+cd enquete-maladie
+```
+
+### 10.3 Install Python Dependencies
+
+Install the required Python packages:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 10.2 Dataset preparation
+The main dependencies include:
 
-1. Download the BRFSS 2022 ASCII archive from the official CDC website.
-2. Extract the archive.
-3. Place `LLCP2022.ASC` inside the `data/` directory.
-4. Ensure that `docs/variable_layout.html` is available in the project.
+- Pandas: data manipulation and analysis.
+- NumPy: numerical operations.
+- Matplotlib: data visualization.
 
-The raw dataset is not included in the GitHub repository because of its size.
+### 10.4 Dataset Preparation
 
-### 10.3 Reproduce the age-and-BMI analysis
+The raw CDC BRFSS 2022 dataset is not included in the Git repository because of its large size.
 
-From the project root directory, execute:
+The pipeline automatically downloads and prepares the dataset when it is not available locally.
 
-```bash
-python scripts/reproduce_age_bmi_diabetes.py
-```
+The dataset integrity is checked using the SHA-256 checksum stored in the `checksums/` directory.
 
-This generates:
+The raw dataset files are stored in the `data/` directory and excluded from Git using `.gitignore`.
 
-`results/age_bmi_diabetes_python.csv`
+### 10.5 Run the Complete Pipeline
 
-### 10.4 Generate the visualizations
-
-Generate the obesity-by-age graph:
+Make the pipeline executable if necessary:
 
 ```bash
-python scripts/plot_obesity_age.py
+chmod +x run.sh
 ```
 
-Generate the age-and-BMI comparison graph:
+Run the complete analysis:
 
 ```bash
-python scripts/plot_bmi_age_comparison.py
+./run.sh
 ```
 
-Both scripts save their images in the `results/` directory.
+The pipeline automatically performs the following operations:
 
-The age and BMI summary CSV files produced by the original interactive AWK workflow are retained as project outputs. Their original extraction commands are not currently available as standalone scripts.
+1. Checks the required commands and Python dependencies.
+2. Verifies the dataset checksum.
+3. Downloads and extracts the dataset if necessary.
+4. Processes the BRFSS 2022 data.
+5. Generates the analysis CSV file.
+6. Creates the visualization images.
+7. Displays summary information.
+8. Executes automated tests.
+9. Archives the generated results.
 
-### 10.5 Run automated tests
+### 10.6 Available Options
 
-Execute:
+The main script supports the following options:
+
+| Command       | Description                        |
+| ------------- | ---------------------------------- |
+| `./run.sh -h` | Displays the help message.         |
+| `./run.sh -f` | Forces the dataset download again. |
+| `./run.sh -s` | Skips automated tests.             |
+
+For example, to execute the pipeline without running tests:
+
+```bash
+./run.sh -s
+```
+
+### 10.7 Run Individual Analysis Scripts
+
+The Python analysis can also be executed independently:
+
+```bash
+python scripts/reproduce_age_bmi_diabetes.py \
+    --input data/LLCP2022.ASC \
+    --output results/age_bmi_diabetes_python.csv \
+    --chunk-size 50000
+```
+
+The script supports the following arguments:
+
+- `--input`: path to the raw dataset.
+- `--output`: path to the generated CSV file.
+- `--chunk-size`: number of records processed per chunk.
+
+### 10.8 Run Automated Tests
+
+Execute the automated tests using:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-The tests verify:
+The tests validate the analysis calculations, categories, totals, percentages, and consistency between the Shell and Python implementations.
 
-- The expected CSV columns.
-- The number of age-and-BMI groups.
-- Valid age categories.
-- Valid BMI categories.
-- Correct total calculations.
-- Correct percentage calculations.
-- Correct small-case classification.
-- Overall Type 2 and no-diabetes counts.
-- Consistency between AWK and Python outputs.
+### 10.9 Generated Outputs
 
-The current test suite contains nine tests.
+The pipeline generates the following files:
+
+| File                                     | Description                                       |
+| ---------------------------------------- | ------------------------------------------------- |
+| `results/age_bmi_diabetes_python.csv`    | Age and BMI analysis results generated by Python. |
+| `results/obesity_age.png`                | Visualization of obesity and age.                 |
+| `results/bmi_age_comparison.png`         | Comparison of BMI categories across age groups.   |
+| `logs/run_YYYYMMDD_HHMMSS.log`           | Timestamped execution log.                        |
+| `archive/results_YYYYMMDD_HHMMSS.tar.gz` | Compressed archive of analysis results.           |
+
+### 10.10 Automatic Execution with Cron
+
+An example cron configuration is provided in:
+
+`cron/enquete-maladie.cron.example`
+
+On a Linux system or WSL, the pipeline can be scheduled to run automatically.
+
+1. Replace `/path/to/enquete-maladie` with the absolute path to the project directory.
+2. Open the crontab editor:
+
+```bash
+crontab -e
+```
+
+3. Add the following cron entry:
+
+```cron
+0 8 * * * cd /path/to/enquete-maladie && /bin/bash ./run.sh >> logs/cron.log 2>&1
+```
+
+This configuration runs the pipeline every day at 08:00. Standard output and errors are appended to `logs/cron.log`.
+
+**Note:** Cron requires a Linux environment or WSL. Git Bash on Windows does not provide a cron service by itself.
 
 ## 11. Limitations and Responsible Interpretation
 
@@ -478,3 +553,21 @@ This confirms consistency between the two implementations for the current analys
 It does not independently validate the scientific assumptions, survey weighting, or statistical representativeness of the results.
 
 **Note:** The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts. The Python reproduction script is available for reproducing the combined age-and-BMI analysis from the original dataset.
+
+## 15. Work Distribution and Contributions
+
+At the current stage of the project, the work has been carried out entirely by one contributor oussama larbi .
+
+The following tasks were completed independently:
+
+- Research topic selection and project planning.
+- CDC BRFSS 2022 dataset acquisition and preparation.
+- Data cleaning, processing, and analysis.
+- Development of Python analysis and visualization scripts.
+- Development of the Shell automation pipeline (`run.sh`).
+- Implementation of automated tests.
+- Dataset integrity verification using SHA-256 checksums.
+- Project documentation (`README.md` and `SOURCES.md`).
+- Pipeline testing and reproducibility verification.
+
+The current contribution distribution reflects the work completed so far. It may be revised after discussion with the other group members to reflect any additional contributions or changes in responsibilities.

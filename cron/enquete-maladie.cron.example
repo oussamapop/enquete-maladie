@@ -1,0 +1,5 @@
+# Example cron job for the diabetes analysis project
+# Runs every day at 08:00
+# Replace the path with the absolute path to your project
+
+0 8 * * * cd /path/to/enquete-maladie && /bin/bash ./run.sh >> logs/cron.log 2>&1

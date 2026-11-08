@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # Read the CSV file
 df = pd.read_csv(
-    "results/age_bmi_diabetes.csv",
+    "results/age_bmi_diabetes_python.csv",
     dtype={"age_code": str}
 )
 

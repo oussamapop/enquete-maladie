@@ -17,3 +17,6 @@ logs/*
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Generated result archives
+archive/*.tar.gz

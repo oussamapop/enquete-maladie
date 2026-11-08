@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Lire les résultats déjà calculés avec Bash
-df = pd.read_csv("results/age_bmi_diabetes.csv")
+df = pd.read_csv("results/age_bmi_diabetes_python.csv")
 
 # Garder la catégorie BMI 4 (obésité)
 # et les groupes avec au moins 20 cas de type 2
