@@ -2,4 +2,4 @@ GitHub Repository:
 https://github.com/oussamapop/enquete-maladie.git
 
 Final Commit Hash:
-TO_BE_UPDATED_AFTER_FINAL_COMMIT
+032753f2ddf80e27112ac7e10261f1757fde2f6c
