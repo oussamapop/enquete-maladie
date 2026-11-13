@@ -238,9 +238,6 @@ prepare_dataset
 
 cd "$PROJECT_DIR"
 
-run_step "Running Bash/AWK analysis" \
-    bash scripts/awk_analysis.sh "$ASC_FILE" "$RESULTS_DIR"
-
 run_step "Running diabetes analysis" \
     python3 scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
 

@@ -167,7 +167,7 @@ The work included:
 - Calculating descriptive percentages.
 - Identifying groups with fewer than 20 classified Type 2 diabetes cases.
 
-The Bash/AWK analysis is in `scripts/awk_analysis.sh`. It reads the dataset once and writes `results/age_diabetes.csv`, `results/bmi_diabetes_comparison.csv` and `results/age_bmi_diabetes.csv`. `run.sh` runs it automatically before the Python analysis, so all results can be rebuilt from the raw dataset.
+The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts.
 
 ### 6.2 Age and diabetes analysis
 
@@ -636,7 +636,7 @@ This confirms consistency between the two implementations for the current analys
 
 It does not independently validate the scientific assumptions, survey weighting, or statistical representativeness of the results.
 
-**Note:** The Bash/AWK analysis (`scripts/awk_analysis.sh`) and the Python reproduction script (`scripts/reproduce_age_bmi_diabetes.py`) both run as part of `run.sh`, so the AWK and Python results are regenerated from the original dataset on every run and compared by the tests.
+**Note:** The original Bash/AWK extraction commands were executed interactively and were not preserved as standalone scripts. The Python reproduction script is available for reproducing the combined age-and-BMI analysis from the original dataset.
 
 ## 15. Work Distribution and Contributions
 
