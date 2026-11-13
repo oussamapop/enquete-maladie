@@ -19,7 +19,6 @@ enquete-maladie/
 ├── data/                     # Downloaded dataset (created by run.sh, not in Git)
 ├── docs/
 │   ├── rapport.pdf           # Project report (4 pages)
-│   ├── rapport.html          # Source of the report (printed to PDF)
 │   └── variable_layout.html  # CDC map of variable positions
 ├── gui/
 │   ├── server.py             # Local web interface
