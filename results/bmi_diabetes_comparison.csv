@@ -1,9 +1,0 @@
-group,category,count,percentage,total_valid_bmi
-no_diabetes,1,1177,1.73,67989
-no_diabetes,2,21022,30.92,67989
-no_diabetes,3,24575,36.15,67989
-no_diabetes,4,21215,31.20,67989
-type2,1,47,0.49,9521
-type2,2,1136,11.93,9521
-type2,3,2977,31.27,9521
-type2,4,5361,56.31,9521
