@@ -486,25 +486,74 @@ This configuration runs the pipeline every day at 08:00. Standard output and err
 
 **Note:** Git Bash on Windows does not provide a cron service by itself; use WSL.
 
-### Graphical interface (optional)
+### Graphical interface (GUI)
 
-A local graphical interface lets you run the pipeline and explore the results without the terminal. It uses only the Python standard library:
+The project includes a graphical interface that runs in your web browser. It lets you run the pipeline and explore the results without typing commands. It only needs Python 3; no extra packages are required to start it.
 
-```bash
-python3 gui/server.py
+#### How to launch the GUI
+
+1. Open a terminal and go to the project folder:
+
+   ```bash
+   cd path/to/enquete-maladie
+   ```
+
+2. Start the GUI server:
+
+   ```bash
+   python3 gui/server.py
+   ```
+
+3. Your browser opens automatically at **http://127.0.0.1:8765/**. If it does not, copy this address into your browser.
+
+4. **Keep the terminal open** while you use the interface. Closing the terminal or pressing `Ctrl+C` stops the website.
+
+The server only listens on your own computer (`127.0.0.1`); it is not reachable from other machines.
+
+#### Options
+
+| Command | Description |
+| --- | --- |
+| `python3 gui/server.py` | Start on port 8765 and open the browser. |
+| `python3 gui/server.py --port 8766` | Use another port. |
+| `python3 gui/server.py --no-browser` | Start without opening the browser. |
+
+#### Using the interface
+
+| Tab | What it does |
+| --- | --- |
+| **Run pipeline** | Runs `./run.sh`. Tick **Force dataset download** (`-f`) or **Skip automated tests** (`-s`), then press **Run**. The log appears live with step progress. **Stop** interrupts the run like `Ctrl+C`, so temporary files are cleaned up. |
+| **Overview** | Key figures, Type 2 prevalence by age group, BMI distribution comparison, and an age × BMI heatmap (hatched cells have fewer than 20 cases). |
+| **Data tables** | Sortable, filterable views of each CSV file in `results/`, with download links. |
+| **Figures** | The PNG graphs in `results/`. |
+| **Logs & archives** | Previous run logs, `.tar.gz` result archives, and the final report. |
+
+A **☾ Dark / ☀ Light** button in the top-right corner switches the theme.
+
+On the first run, the dataset (about 50 MB compressed, 880 MB extracted) is downloaded and verified, which can take a few minutes. Charts, tables and figures refresh automatically when a run finishes.
+
+#### Which Python runs the pipeline
+
+The GUI automatically looks for a Python that has `pandas`, `numpy` and `matplotlib` installed (for example a Homebrew `python3.12`) and uses it to run `./run.sh`, even if the default `python3` does not have them. The first line of the log shows which one is used:
+
+```text
+[GUI] Using Python: /opt/homebrew/bin/python3.12
 ```
 
-Your browser opens at `http://127.0.0.1:8765/`. Use `--port` to choose another port and `--no-browser` to skip opening the browser. The server only listens on your own machine. Press `Ctrl+C` in the terminal to quit.
+If none is found, install the dependencies first:
 
-The interface has five tabs:
+```bash
+python3 -m pip install -r requirements.txt
+```
 
-- **Overview:** key figures, Type 2 prevalence by age group, BMI distribution comparison, and an age × BMI heatmap (cells with fewer than 20 cases are hatched).
-- **Run pipeline:** starts `./run.sh` with the `-f` and `-s` options, shows the log live with step progress, and can stop the run. Stopping behaves like `Ctrl+C`, so temporary files are cleaned up.
-- **Data tables:** sortable, filterable views of each CSV file in `results/`, with download links.
-- **Figures:** the PNG graphs in `results/`.
-- **Logs & archives:** previous run logs, `.tar.gz` result archives, and the final report.
+#### Troubleshooting
 
-The pipeline is started with the same `python3` that is first on your `PATH`, so it needs the dependencies from `requirements.txt` installed.
+| Problem | Solution |
+| --- | --- |
+| The page does not load | The server is not running. Start it again with `python3 gui/server.py` and keep the terminal open. |
+| `Address already in use` | The GUI is already running: just open http://127.0.0.1:8765/. Or start it on another port with `--port 8766`. |
+| `No module named 'pandas'` in the log | No Python with the dependencies was found. Run `python3 -m pip install -r requirements.txt`. |
+| Overview shows "not found" | No results yet. Go to **Run pipeline** and press **Run**. |
 
 ## 11. Limitations and Responsible Interpretation
 
