@@ -15,6 +15,7 @@ LOG_DIR="$PROJECT_DIR/logs"
 ARCHIVE_DIR="$PROJECT_DIR/archive"
 
 ZIP_FILE="$DATA_DIR/LLCP2022ASC.zip"
+TEMP_FILE="$ZIP_FILE.tmp"
 ASC_FILE="$DATA_DIR/LLCP2022.ASC"
 CHECKSUM_FILE="$PROJECT_DIR/checksums/LLCP2022ASC.zip.sha256"
 
@@ -39,6 +40,21 @@ die() {
 require_command() {
     command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
+
+# Remove temporary files (called on every exit)
+cleanup() {
+    rm -f "$TEMP_FILE"
+}
+
+# Called on Ctrl+C (INT) or kill (TERM)
+on_interrupt() {
+    log "Interrupted. Removing temporary files..."
+    cleanup
+    exit 130
+}
+
+trap on_interrupt INT TERM
+trap cleanup EXIT
 
 show_help() {
     cat <<HELP
@@ -71,26 +87,23 @@ verify_checksum() {
 }
 
 download_dataset() {
-    local temp_file="$ZIP_FILE.tmp"
-
     log "Downloading BRFSS 2022 dataset..."
 
-    rm -f "$temp_file"
+    rm -f "$TEMP_FILE"
 
     curl -fL --retry 3 \
-        --output "$temp_file" \
+        --output "$TEMP_FILE" \
         "$DATA_URL" || die "Dataset download failed."
 
     log "Verifying downloaded dataset checksum..."
 
-    if ! verify_checksum "$temp_file"; then
-        rm -f "$temp_file"
+    if ! verify_checksum "$TEMP_FILE"; then
         die "Checksum verification failed. Downloaded file does not match the expected SHA256."
     fi
 
-    unzip -tq "$temp_file" || die "Downloaded ZIP archive is invalid."
+    unzip -tq "$TEMP_FILE" || die "Downloaded ZIP archive is invalid."
 
-    mv "$temp_file" "$ZIP_FILE"
+    mv "$TEMP_FILE" "$ZIP_FILE"
 
     log "Dataset downloaded and verified successfully."
 }
@@ -182,7 +195,8 @@ mkdir -p "$DATA_DIR" "$RESULTS_DIR" "$LOG_DIR" "$ARCHIVE_DIR"
 
 LOG_FILE="$LOG_DIR/run_$(date '+%Y%m%d_%H%M%S').log"
 
-exec > >(tee -a "$LOG_FILE") 2>&1
+# tee ignores Ctrl+C so the interruption message still reaches the log
+exec > >(trap '' INT; tee -a "$LOG_FILE") 2>&1
 
 log "========================================"
 log "Starting Enquête sur une maladie"

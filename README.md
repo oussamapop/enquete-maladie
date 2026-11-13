@@ -401,6 +401,8 @@ The main script supports the following options:
 | `./run.sh -f` | Forces the dataset download again. |
 | `./run.sh -s` | Skips automated tests.             |
 
+**Interruption:** if the pipeline is stopped (Ctrl+C or `kill`), a `trap` removes the temporary download file (`data/LLCP2022ASC.zip.tmp`) and the script exits with code `130`. It can be run again without manual cleanup.
+
 For example, to execute the pipeline without running tests:
 
 ```bash
