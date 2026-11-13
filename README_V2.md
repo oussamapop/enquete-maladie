@@ -2,6 +2,38 @@
 
 Reproducible pipeline that downloads the CDC BRFSS 2022 survey, filters it, and measures the share of Type 2 diabetes by age group and BMI category.
 
+## Project structure
+
+```text
+enquete-maladie/
+├── run.sh                    # Main pipeline: runs everything
+├── requirements.txt          # Python dependencies
+├── README.md                 # Full documentation
+├── README_V2.md              # This file
+├── SOURCES.md                # Dataset source, URL and download date
+├── LIEN_GIT.txt              # Repository URL and final commit hash
+├── checksums/
+│   └── LLCP2022ASC.zip.sha256    # Expected SHA-256 of the dataset
+├── cron/
+│   └── enquete-maladie.cron.example  # Scheduled run (cron)
+├── data/                     # Downloaded dataset (created by run.sh, not in Git)
+├── docs/
+│   ├── rapport.pdf           # Project report
+│   └── variable_layout.html  # CDC map of variable positions
+├── gui/
+│   ├── server.py             # Local web interface
+│   └── static/index.html
+├── scripts/
+│   ├── reproduce_age_bmi_diabetes.py  # Analysis → results CSV
+│   ├── plot_obesity_age.py            # Figure 1
+│   └── plot_bmi_age_comparison.py     # Figure 2
+├── tests/
+│   └── test_analysis.py      # Automated tests
+├── results/                  # CSV and figures
+├── logs/                     # Timestamped run logs (created by run.sh)
+└── archive/                  # Dated .tar.gz of results (created by run.sh)
+```
+
 ## 1. Installation
 
 ### Prerequisites
