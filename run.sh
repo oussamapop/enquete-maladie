@@ -110,6 +110,9 @@ download_dataset() {
 
 prepare_dataset() {
 
+    # Raw data is read-only (444): unlock it so it can be replaced or re-extracted
+    chmod u+w "$ZIP_FILE" "$ASC_FILE" 2>/dev/null || true
+
     if [[ "$FORCE_DOWNLOAD" == true ]]; then
         download_dataset
 
@@ -146,7 +149,10 @@ prepare_dataset() {
     [[ -s "$ASC_FILE" ]] \
         || die "Dataset file is missing or empty: $ASC_FILE"
 
-    log "Dataset is ready."
+    # Protect the raw data: read-only for everyone
+    chmod 444 "$ZIP_FILE" "$ASC_FILE"
+
+    log "Dataset is ready (raw data set to read-only)."
 }
 
 run_step() {
