@@ -320,7 +320,7 @@ enquete-maladie/
 
 The project requires the following tools:
 
-- Python 3
+- Python 3.11 or newer (pandas 3.x requires it; on macOS the built-in `python3` is 3.9, install a newer one e.g. `brew install python@3.12`)
 - Bash
 - Git
 - `curl`
@@ -346,7 +346,7 @@ cd enquete-maladie
 Install the required Python packages:
 
 ```bash
-python -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 The main dependencies include:
@@ -412,7 +412,7 @@ For example, to execute the pipeline without running tests:
 The Python analysis can also be executed independently:
 
 ```bash
-python scripts/reproduce_age_bmi_diabetes.py \
+python3 scripts/reproduce_age_bmi_diabetes.py \
     --input data/LLCP2022.ASC \
     --output results/age_bmi_diabetes_python.csv \
     --chunk-size 50000
@@ -429,7 +429,7 @@ The script supports the following arguments:
 Execute the automated tests using:
 
 ```bash
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
 
 The tests validate the analysis calculations, categories, totals, percentages, and consistency between the Shell and Python implementations.

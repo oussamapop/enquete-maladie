@@ -121,6 +121,11 @@ prepare_dataset() {
         unzip -oq "$ZIP_FILE" -d "$DATA_DIR" \
             || die "Dataset extraction failed."
 
+        # The CDC archive stores the file as "LLCP2022.ASC " (trailing space)
+        if [[ -f "$ASC_FILE " ]]; then
+            mv -f "$ASC_FILE " "$ASC_FILE"
+        fi
+
     else
         log "Extracted dataset already exists."
     fi
@@ -187,7 +192,7 @@ log "========================================"
 # 5. Check required commands
 # --------------------------------------------------
 
-for cmd in python curl unzip sha256sum tar awk tee; do
+for cmd in python3 curl unzip sha256sum tar awk tee; do
     require_command "$cmd"
 done
 
@@ -195,8 +200,8 @@ done
 # 6. Check Python dependencies
 # --------------------------------------------------
 
-python -c "import pandas, numpy, matplotlib" \
-    || die "Python dependencies are missing. Run: python -m pip install -r requirements.txt"
+python3 -c "import pandas, numpy, matplotlib" \
+    || die "Python dependencies are missing. Run: python3 -m pip install -r requirements.txt"
 
 # --------------------------------------------------
 # 7. Prepare dataset
@@ -214,17 +219,17 @@ prepare_dataset
 cd "$PROJECT_DIR"
 
 run_step "Running diabetes analysis" \
-    python scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
+    python3 scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
 
 # --------------------------------------------------
 # 9. Generate visualizations
 # --------------------------------------------------
 
 run_step "Generating obesity-age graph" \
-    python scripts/plot_obesity_age.py
+    python3 scripts/plot_obesity_age.py
 
 run_step "Generating BMI-age comparison graph" \
-    python scripts/plot_bmi_age_comparison.py
+    python3 scripts/plot_bmi_age_comparison.py
 
 # --------------------------------------------------
 # 10. Display age-group summary using a shell pipeline
@@ -244,7 +249,7 @@ tail -n +2 "$RESULTS_DIR/age_bmi_diabetes_python.csv" \
 if [[ "$SKIP_TESTS" == false ]]; then
 
     run_step "Running automated tests" \
-        python -m unittest discover -s tests -v
+        python3 -m unittest discover -s tests -v
 
 else
     log "Automated tests skipped."
