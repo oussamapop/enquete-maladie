@@ -40,20 +40,12 @@ enquete-maladie/
 
 | Tool | Notes |
 | --- | --- |
-| Bash | macOS, Linux or WSL |
-| Python **3.11 or newer** | required by pandas 3.x |
-| `curl`, `unzip`, `sha256sum`, `tar`, `awk`, `tee` | standard command-line tools |
+| Bash | to run `run.sh` |
+| Python **3.11 or newer** | required by pandas 3.x — https://www.python.org/downloads/ |
+| `curl`, `unzip`, `tar`, `awk`, `tee`, `sha256sum` or `shasum` | standard command-line tools |
 | Git | to clone the repository |
 
-> **macOS:** the built-in `python3` is version 3.9, which is too old. Install a newer one with Homebrew:
->
-> ```bash
-> brew install python@3.12
-> export PATH="/opt/homebrew/opt/python@3.12/libexec/bin:$PATH"
-> python3 --version   # must show 3.11 or newer
-> ```
->
-> Add the `export` line to `~/.zshrc` to keep it in every new terminal.
+`run.sh` finds a suitable Python by itself (`python3`, `python3.12`, `python`…): it picks the first one that is 3.11 or newer and has the dependencies installed, and prints which one it uses. If none is found, it stops with a message saying what to install.
 
 ### Steps
 
@@ -135,7 +127,7 @@ Output goes to `logs/cron.log`.
 | Member | Contributions |
 | --- | --- |
 | Oussama Larbi | Topic and dataset choice; data exploration (Bash/AWK); Python analysis and figures; automated tests; first `run.sh` pipeline; checksum; documentation (`README.md`, `SOURCES.md`); report (`rapport.pdf`) |
-| Massil | macOS/Linux compatibility (`python3`, file name with trailing space); `trap` cleanup on interruption; read-only raw data; verbose mode (`-v`); runnable cron task; graphical interface (`gui/`); pipeline testing on a clean machine |
+| Massil | Cross-platform compatibility (Python auto-detection, checksum tool fallback, file name with trailing space); `trap` cleanup on interruption; read-only raw data; verbose mode (`-v`); runnable cron task; graphical interface (`gui/`); pipeline testing on a clean machine |
 | _Member 3_ | _to complete_ |
 | _Member 4_ | _to complete_ |
 | _Member 5_ | _to complete_ |

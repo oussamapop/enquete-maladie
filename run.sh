@@ -24,6 +24,7 @@ DATA_URL="https://www.cdc.gov/brfss/annual_data/2022/files/LLCP2022ASC.zip"
 FORCE_DOWNLOAD=false
 SKIP_TESTS=false
 VERBOSE=false
+PYTHON=""
 USE_COLOR=false
 
 # --------------------------------------------------
@@ -59,6 +60,41 @@ require_command() {
     command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
+# Find a Python 3.11+ that has the dependencies.
+# The command name differs between systems (python3, python3.12, python...).
+find_python() {
+    local candidate first_ok=""
+
+    for candidate in python3 python3.14 python3.13 python3.12 python3.11 python; do
+        command -v "$candidate" >/dev/null 2>&1 || continue
+
+        # Skip versions older than 3.11
+        "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 11))' 2>/dev/null || continue
+
+        if [[ -z "$first_ok" ]]; then first_ok="$candidate"; fi
+
+        if "$candidate" -c 'import pandas, numpy, matplotlib' 2>/dev/null; then
+            PYTHON="$candidate"
+            return 0
+        fi
+    done
+
+    if [[ -n "$first_ok" ]]; then
+        die "Python dependencies are missing. Run: $first_ok -m pip install -r requirements.txt"
+    fi
+
+    die "Python 3.11 or newer is required but was not found. Install it from https://www.python.org/downloads/"
+}
+
+# Print the SHA-256 of a file (sha256sum on Linux, shasum on other systems)
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1"
+    else
+        shasum -a 256 "$1"
+    fi | awk '{print $1}'
+}
+
 # Remove temporary files (called on every exit)
 cleanup() {
     rm -f "$TEMP_FILE"
@@ -90,7 +126,7 @@ verify_checksum() {
     local expected actual
 
     expected="$(awk '{print $1}' "$CHECKSUM_FILE")"
-    actual="$(sha256sum "$file" | awk '{print $1}')"
+    actual="$(sha256_of "$file")"
 
     if [[ "$actual" != "$expected" ]]; then
         return 1
@@ -240,16 +276,19 @@ fi
 # 5. Check required commands
 # --------------------------------------------------
 
-for cmd in python3 curl unzip sha256sum tar awk tee; do
+for cmd in curl unzip tar awk tee; do
     require_command "$cmd"
 done
+
+command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1 \
+    || die "Required command not found: sha256sum (or shasum)"
 
 # --------------------------------------------------
 # 6. Check Python dependencies
 # --------------------------------------------------
 
-python3 -c "import pandas, numpy, matplotlib" \
-    || die "Python dependencies are missing. Run: python3 -m pip install -r requirements.txt"
+find_python
+log "Using Python: $(command -v "$PYTHON") ($("$PYTHON" --version 2>&1))"
 
 # --------------------------------------------------
 # 7. Prepare dataset
@@ -267,17 +306,17 @@ prepare_dataset
 cd "$PROJECT_DIR"
 
 run_step "Running diabetes analysis" \
-    python3 scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
+    "$PYTHON" scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
 
 # --------------------------------------------------
 # 9. Generate visualizations
 # --------------------------------------------------
 
 run_step "Generating obesity-age graph" \
-    python3 scripts/plot_obesity_age.py
+    "$PYTHON" scripts/plot_obesity_age.py
 
 run_step "Generating BMI-age comparison graph" \
-    python3 scripts/plot_bmi_age_comparison.py
+    "$PYTHON" scripts/plot_bmi_age_comparison.py
 
 # --------------------------------------------------
 # 10. Display age-group summary using a shell pipeline
@@ -297,7 +336,7 @@ tail -n +2 "$RESULTS_DIR/age_bmi_diabetes_python.csv" \
 if [[ "$SKIP_TESTS" == false ]]; then
 
     run_step "Running automated tests" \
-        python3 -m unittest discover -s tests -v
+        "$PYTHON" -m unittest discover -s tests -v
 
 else
     log "Automated tests skipped."
