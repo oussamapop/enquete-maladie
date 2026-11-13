@@ -1,5 +1,13 @@
 # Example cron job for the diabetes analysis project
 # Runs every day at 08:00
-# Replace the path with the absolute path to your project
+#
+# Install:  1. replace /path/to/enquete-maladie with the absolute project path
+#           2. crontab -e   (paste the two lines below)
+#           3. crontab -l   (check it is installed)
+# Check:    logs/cron.log and logs/run_*.log after 08:00
 
-0 8 * * * cd /path/to/enquete-maladie && /bin/bash ./run.sh >> logs/cron.log 2>&1
+# Cron starts with a minimal PATH: list where python3, curl, sha256sum live
+# (add /opt/homebrew/bin on macOS with Homebrew)
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+0 8 * * * cd /path/to/enquete-maladie && mkdir -p logs && /bin/bash ./run.sh >> logs/cron.log 2>&1

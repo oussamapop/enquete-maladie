@@ -298,6 +298,7 @@ enquete-maladie/
 ├── tests/
 ├── logs/
 ├── archive/
+├── cron/
 ├── run.sh
 ├── requirements.txt
 ├── SOURCES.md
@@ -307,6 +308,7 @@ enquete-maladie/
 
 - `data/`: CDC dataset files (excluded from Git).
 - `checksums/`: Dataset integrity verification.
+- `cron/`: Example cron job to run the pipeline automatically.
 - `docs/`: CDC variable documentation.
 - `results/`: Generated CSV files and figures.
 - `scripts/`: Python analysis and visualization scripts.
@@ -454,24 +456,33 @@ An example cron configuration is provided in:
 
 `cron/enquete-maladie.cron.example`
 
-On a Linux system or WSL, the pipeline can be scheduled to run automatically.
+On Linux, macOS or WSL, the pipeline can be scheduled to run automatically.
 
-1. Replace `/path/to/enquete-maladie` with the absolute path to the project directory.
+1. Replace `/path/to/enquete-maladie` with the absolute path to the project directory (`pwd` inside the project prints it).
 2. Open the crontab editor:
 
 ```bash
 crontab -e
 ```
 
-3. Add the following cron entry:
+3. Add the following lines:
 
 ```cron
-0 8 * * * cd /path/to/enquete-maladie && /bin/bash ./run.sh >> logs/cron.log 2>&1
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+0 8 * * * cd /path/to/enquete-maladie && mkdir -p logs && /bin/bash ./run.sh >> logs/cron.log 2>&1
 ```
 
-This configuration runs the pipeline every day at 08:00. Standard output and errors are appended to `logs/cron.log`.
+4. Check that the job is installed:
 
-**Note:** Cron requires a Linux environment or WSL. Git Bash on Windows does not provide a cron service by itself.
+```bash
+crontab -l
+```
+
+This configuration runs the pipeline every day at 08:00. Standard output and errors are appended to `logs/cron.log`, and each run also writes its own `logs/run_YYYYMMDD_HHMMSS.log`.
+
+**Why the `PATH` line:** cron starts jobs with a minimal `PATH`, so `python3`, `curl` or `sha256sum` may not be found and the job would fail silently. Add the directory where your Python 3.11+ is installed if it is not listed (e.g. `/opt/homebrew/bin` on macOS with Homebrew; `which python3` shows it).
+
+**Note:** Git Bash on Windows does not provide a cron service by itself; use WSL.
 
 ## 11. Limitations and Responsible Interpretation
 
