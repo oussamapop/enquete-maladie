@@ -23,13 +23,31 @@ DATA_URL="https://www.cdc.gov/brfss/annual_data/2022/files/LLCP2022ASC.zip"
 
 FORCE_DOWNLOAD=false
 SKIP_TESTS=false
+VERBOSE=false
+USE_COLOR=false
 
 # --------------------------------------------------
 # 2. Functions
 # --------------------------------------------------
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+    # Hide the internals of log itself from the verbose trace
+    { [[ $- == *x* ]] && local trace=on || local trace=off; set +x; } 2>/dev/null
+
+    local message="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+
+    if [[ "$VERBOSE" == true ]]; then
+        # Highlight main steps: "==>" marker, bold green on a terminal
+        if [[ "$USE_COLOR" == true ]]; then
+            printf '\033[1;32m==> %s\033[0m\n' "$message"
+        else
+            printf '==> %s\n' "$message"
+        fi
+    else
+        echo "$message"
+    fi
+
+    if [[ "$trace" == on ]]; then set -x; fi
 }
 
 die() {
@@ -61,14 +79,9 @@ show_help() {
 Usage: ./run.sh [OPTIONS]
 
 Options:
-  -h    Display this help message
   -f    Force dataset download
   -s    Skip automated tests
-
-Examples:
-  ./run.sh
-  ./run.sh -f
-  ./run.sh -s
+  -v    Verbose: show each command as it runs
 HELP
 }
 
@@ -168,7 +181,7 @@ run_step() {
 # 3. Read command-line options
 # --------------------------------------------------
 
-while getopts ":hfs" option; do
+while getopts ":hfsv" option; do
     case "$option" in
         h)
             show_help
@@ -179,6 +192,9 @@ while getopts ":hfs" option; do
             ;;
         s)
             SKIP_TESTS=true
+            ;;
+        v)
+            VERBOSE=true
             ;;
         :)
             echo "Option -$OPTARG requires an argument."
@@ -201,12 +217,24 @@ mkdir -p "$DATA_DIR" "$RESULTS_DIR" "$LOG_DIR" "$ARCHIVE_DIR"
 
 LOG_FILE="$LOG_DIR/run_$(date '+%Y%m%d_%H%M%S').log"
 
-# tee ignores Ctrl+C so the interruption message still reaches the log
-exec > >(trap '' INT; tee -a "$LOG_FILE") 2>&1
+# Colors only when the output is a terminal (checked before redirecting)
+if [[ -t 1 ]]; then USE_COLOR=true; fi
+
+# tee ignores Ctrl+C so the interruption message still reaches the log;
+# awk removes color codes (log file stays plain text) and writes each line
+# immediately (fflush) so nothing is lost if the script is interrupted
+exec > >(trap '' INT; tee >(awk '{ gsub(/\033\[[0-9;]*m/, ""); print; fflush() }' >> "$LOG_FILE")) 2>&1
 
 log "========================================"
 log "Starting Enquête sur une maladie"
 log "========================================"
+
+# Verbose mode: print every command before running it, with its line number
+if [[ "$VERBOSE" == true ]]; then
+    log "Verbose mode enabled"
+    PS4='+ line ${LINENO}: '
+    set -x
+fi
 
 # --------------------------------------------------
 # 5. Check required commands

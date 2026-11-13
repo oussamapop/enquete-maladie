@@ -401,9 +401,9 @@ The main script supports the following options:
 
 | Command       | Description                        |
 | ------------- | ---------------------------------- |
-| `./run.sh -h` | Displays the help message.         |
 | `./run.sh -f` | Forces the dataset download again. |
 | `./run.sh -s` | Skips automated tests.             |
+| `./run.sh -v` | Verbose: shows each command as it runs, with its line number. |
 
 **Interruption:** if the pipeline is stopped (Ctrl+C or `kill`), a `trap` removes the temporary download file (`data/LLCP2022ASC.zip.tmp`) and the script exits with code `130`. It can be run again without manual cleanup.
 
