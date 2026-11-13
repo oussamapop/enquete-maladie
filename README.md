@@ -523,7 +523,7 @@ The server only listens on your own computer (`127.0.0.1`); it is not reachable 
 | Tab | What it does |
 | --- | --- |
 | **Run pipeline** | Runs `./run.sh`. Tick **Force dataset download** (`-f`) or **Skip automated tests** (`-s`), then press **Run**. The log appears live with step progress. **Stop** interrupts the run like `Ctrl+C`, so temporary files are cleaned up. |
-| **Overview** | Key figures, Type 2 prevalence by age group, BMI distribution comparison, and an age × BMI heatmap (hatched cells have fewer than 20 cases). |
+| **Overview** | Key figures, Type 2 prevalence by age group, and BMI distribution comparison. |
 | **Data tables** | Sortable, filterable views of each CSV file in `results/`, with download links. |
 | **Figures** | The PNG graphs in `results/`. |
 | **Logs & archives** | Previous run logs, `.tar.gz` result archives, and the final report. |

@@ -104,10 +104,6 @@
   .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 
-  .heatmap { width: 100%; border-collapse: separate; border-spacing: 2px; font-variant-numeric: tabular-nums; }
-  .heatmap th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 4px; }
-  .heatmap td { text-align: center; padding: 8px 4px; border-radius: 4px; font-size: 12px; }
-  .heatmap td.small { background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, var(--surface) 4px, var(--surface) 8px); color: var(--muted); }
 
   .tooltip {
     position: fixed; pointer-events: none; z-index: 10; background: var(--text); color: var(--bg);
@@ -217,11 +213,6 @@
           <span><i style="background:var(--series-b)"></i>No diabetes</span>
         </div>
       </div>
-    </div>
-    <div class="card" style="margin-top:16px">
-      <h2>Type 2 diabetes % by age × BMI category</h2>
-      <p class="hint">Hatched cells have fewer than 20 Type 2 cases and should be read with caution.</p>
-      <div style="overflow-x:auto"><table class="heatmap" id="heatmap"></table></div>
     </div>
   </section>
 
@@ -452,31 +443,6 @@ function renderOverview() {
     });
     groupedBars($("chart-bmi"), cats.map((c) => BMI_LABELS[c]), pick("type2"), pick("no_diabetes"));
   } else $("chart-bmi").innerHTML = `<p class="empty">bmi_diabetes_comparison.csv not found.</p>`;
-
-  // Heatmap
-  if (grid) {
-    const max = Math.max(...grid.rows.map((r) => +r.percentage));
-    const ages = [...new Set(grid.rows.map((r) => ageCode(r.age_code)))].sort();
-    let h = `<tr><th></th>${ages.map((a) => `<th>${AGE_LABELS[a] || a}</th>`).join("")}</tr>`;
-    for (const c of ["4", "3", "2", "1"]) {
-      h += `<tr><th style="text-align:right">${BMI_LABELS[c]}</th>`;
-      for (const a of ages) {
-        const r = grid.rows.find((x) => ageCode(x.age_code) === a && String(x.bmi_category) === c);
-        if (!r) { h += `<td></td>`; continue; }
-        const p = +r.percentage, k = p / max;
-        const tipTxt = `<b>${AGE_LABELS[a]} · ${BMI_LABELS[c]}</b><br>${p.toFixed(2)}% · ${fmt.format(r.type2_count)} / ${fmt.format(r.total)}${r.small_case_count === "YES" ? "<br>fewer than 20 cases" : ""}`;
-        if (r.small_case_count === "YES") {
-          h += `<td class="small" data-tip="${esc(tipTxt)}">${p.toFixed(1)}</td>`;
-        } else {
-          const bg = `color-mix(in srgb, var(--series-a) ${Math.round(12 + k * 88)}%, var(--surface))`;
-          const fg = k > 0.5 ? "#fff" : "var(--text)";
-          h += `<td style="background:${bg};color:${fg}" data-tip="${esc(tipTxt)}">${p.toFixed(1)}</td>`;
-        }
-      }
-      h += `</tr>`;
-    }
-    $("heatmap").innerHTML = h;
-  } else $("heatmap").innerHTML = `<tr><td class="empty">Age × BMI results not found.</td></tr>`;
 }
 
 // --------------------------------------------------
