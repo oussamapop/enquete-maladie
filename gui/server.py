@@ -15,9 +15,11 @@ import argparse
 import csv
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import webbrowser
 from datetime import datetime
@@ -56,6 +58,57 @@ IMAGE_FILES = [
 # 2. Pipeline runner (one run at a time)
 # --------------------------------------------------
 
+REQUIRED_MODULES = "import pandas, numpy, matplotlib"
+
+
+def find_python():
+    """
+    Return the first Python interpreter that has the project's dependencies.
+
+    On macOS, "python3" is often Apple's /usr/bin/python3, which does not have
+    pandas, while the packages are installed for a Homebrew Python such as
+    python3.12. run.sh calls "python3", so we look for a suitable interpreter.
+    """
+    names = ["python3", "python3.14", "python3.13", "python3.12", "python3.11"]
+    extra_dirs = ["/opt/homebrew/bin", "/usr/local/bin"]
+
+    candidates = [sys.executable]
+    for name in names:
+        found = shutil.which(name)
+        if found:
+            candidates.append(found)
+        for directory in extra_dirs:
+            path = os.path.join(directory, name)
+            if os.access(path, os.X_OK):
+                candidates.append(path)
+
+    seen = set()
+    for candidate in candidates:
+        real = os.path.realpath(candidate)
+        if real in seen:
+            continue
+        seen.add(real)
+        try:
+            result = subprocess.run(
+                [candidate, "-c", REQUIRED_MODULES],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if result.returncode == 0:
+            return candidate
+    return None
+
+
+def python_shim_dir(python):
+    """Create a temporary directory whose "python3" points to the given interpreter."""
+    shim_dir = Path(tempfile.mkdtemp(prefix="enquete-gui-python-"))
+    (shim_dir / "python3").symlink_to(python)
+    return shim_dir
+
+
 def _restore_default_signals():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
@@ -79,6 +132,7 @@ class PipelineRunner:
         self.finished_at = None
         self.options = {}
         self.stopping = False
+        self.shim = None
 
     def is_running(self):
         return self.process is not None and self.process.poll() is None
@@ -97,6 +151,18 @@ class PipelineRunner:
             env = dict(os.environ, PYTHONUNBUFFERED="1")
 
             self.lines = []
+            python = find_python()
+            self.shim = None
+            if python:
+                # Put a "python3" with the dependencies first on PATH for run.sh
+                self.shim = python_shim_dir(python)
+                env["PATH"] = f"{self.shim}{os.pathsep}{env.get('PATH', '')}"
+                self.lines.append(f"[GUI] Using Python: {python}")
+            else:
+                self.lines.append(
+                    "[GUI] No Python with pandas, numpy and matplotlib was found. "
+                    "Install them with: python3 -m pip install -r requirements.txt"
+                )
             self.exit_code = None
             self.stopping = False
             self.started_at = datetime.now().isoformat(timespec="seconds")
@@ -126,12 +192,15 @@ class PipelineRunner:
 
     def _read_output(self):
         process = self.process
+        shim = self.shim  # captured now: a later run may replace self.shim
         for raw in iter(process.stdout.readline, b""):
             line = raw.decode("utf-8", errors="replace").rstrip("\n")
             with self.lock:
                 self.lines.append(line)
         process.stdout.close()
         code = process.wait()
+        if shim:
+            shutil.rmtree(shim, ignore_errors=True)
         with self.lock:
             self.exit_code = code
             self.finished_at = datetime.now().isoformat(timespec="seconds")

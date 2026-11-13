@@ -173,8 +173,8 @@
     <div class="pills"><span class="pills" id="dataset-pills"></span><button class="btn theme-toggle" id="theme-toggle" title="Switch light/dark theme">☾ Dark</button></div>
   </div>
   <nav id="tabs">
-    <button data-tab="overview" class="active">Overview</button>
-    <button data-tab="pipeline">Run pipeline</button>
+    <button data-tab="pipeline" class="active">Run pipeline</button>
+    <button data-tab="overview">Overview</button>
     <button data-tab="data">Data tables</button>
     <button data-tab="figures">Figures</button>
     <button data-tab="history">Logs &amp; archives</button>
@@ -182,8 +182,25 @@
 </header>
 
 <main>
+  <!-- Pipeline -->
+  <section id="tab-pipeline">
+    <div class="card">
+      <h2>Run the full pipeline (<code>./run.sh</code>)</h2>
+      <p class="hint">Downloads/verifies the dataset, runs the analysis, generates graphs, runs tests and archives the results.</p>
+      <div class="controls">
+        <label><input type="checkbox" id="opt-force"> Force dataset download <code>-f</code></label>
+        <label><input type="checkbox" id="opt-skip"> Skip automated tests <code>-s</code></label>
+        <button class="btn primary" id="btn-run">Run</button>
+        <button class="btn" id="btn-stop" disabled>Stop</button>
+        <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Idle</span></div>
+      </div>
+      <div class="steps" id="steps"></div>
+      <pre class="log" id="log"><span class="empty">No run yet in this session. Press "Run" to start.</span></pre>
+    </div>
+  </section>
+
   <!-- Overview -->
-  <section id="tab-overview">
+  <section id="tab-overview" hidden>
     <div class="grid kpis" id="kpis"></div>
     <div class="grid two">
       <div class="card">
@@ -205,23 +222,6 @@
       <h2>Type 2 diabetes % by age × BMI category</h2>
       <p class="hint">Hatched cells have fewer than 20 Type 2 cases and should be read with caution.</p>
       <div style="overflow-x:auto"><table class="heatmap" id="heatmap"></table></div>
-    </div>
-  </section>
-
-  <!-- Pipeline -->
-  <section id="tab-pipeline" hidden>
-    <div class="card">
-      <h2>Run the full pipeline (<code>./run.sh</code>)</h2>
-      <p class="hint">Downloads/verifies the dataset, runs the analysis, generates graphs, runs tests and archives the results.</p>
-      <div class="controls">
-        <label><input type="checkbox" id="opt-force"> Force dataset download <code>-f</code></label>
-        <label><input type="checkbox" id="opt-skip"> Skip automated tests <code>-s</code></label>
-        <button class="btn primary" id="btn-run">Run</button>
-        <button class="btn" id="btn-stop" disabled>Stop</button>
-        <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Idle</span></div>
-      </div>
-      <div class="steps" id="steps"></div>
-      <pre class="log" id="log"><span class="empty">No run yet in this session. Press "Run" to start.</span></pre>
     </div>
   </section>
 
@@ -328,12 +328,7 @@ $("tabs").addEventListener("click", (e) => {
   if (!btn) return;
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b === btn));
   document.querySelectorAll("main > section").forEach((s) => { s.hidden = s.id !== "tab-" + btn.dataset.tab; });
-  try { localStorage.setItem("tab", btn.dataset.tab); } catch (_) {}
 });
-try {
-  const saved = localStorage.getItem("tab");
-  if (saved) document.querySelector(`#tabs button[data-tab="${saved}"]`)?.click();
-} catch (_) {}
 
 // --------------------------------------------------
 // Tooltip
