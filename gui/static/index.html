@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquête sur une maladie</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --border: #dfe3e8;
+    --text: #1b1f24;
+    --muted: #5c6670;
+    --accent: #2f6fd6;
+    --accent-text: #ffffff;
+    --series-a: #2f6fd6;   /* type 2 diabetes */
+    --series-b: #9aa5b1;   /* no diabetes */
+    --ok: #1e8a4c;
+    --warn: #b7791f;
+    --bad: #c53030;
+    --log-bg: #11151a;
+    --log-text: #d6dde4;
+    --heat-0: 222 214 255;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151a;
+      --surface: #1a1f26;
+      --surface-2: #222831;
+      --border: #2d3540;
+      --text: #e6eaef;
+      --muted: #97a2ae;
+      --accent: #5b93ec;
+      --accent-text: #0d1117;
+      --series-a: #5b93ec;
+      --series-b: #5f6b78;
+      --ok: #48bb78;
+      --warn: #ecc94b;
+      --bad: #f56565;
+      --log-bg: #0b0e12;
+      --shadow: none;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px 0;
+  }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 18px; margin: 0; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    font-size: 12px; padding: 2px 10px; border-radius: 999px;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+  }
+  .pill.ok { color: var(--ok); }
+  .pill.bad { color: var(--bad); }
+
+  nav { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; }
+  nav button {
+    border: 0; background: none; color: var(--muted); font: inherit;
+    padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+
+  main { padding: 20px 24px 40px; max-width: 1200px; margin: 0 auto; }
+  section[hidden] { display: none; }
+
+  .grid { display: grid; gap: 16px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 16px; }
+  .two { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+  @media (max-width: 520px) { .two { grid-template-columns: 1fr; } main, header { padding-left: 16px; padding-right: 16px; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; box-shadow: var(--shadow); min-width: 0;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 2px; }
+  .card .hint { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .kpi .value { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpi .sub { color: var(--muted); font-size: 12px; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 11px; }
+  svg .grid-line { stroke: var(--border); }
+  svg .bar-a { fill: var(--series-a); }
+  svg .bar-b { fill: var(--series-b); }
+  svg .value-label { fill: var(--text); font-size: 10px; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  .heatmap { width: 100%; border-collapse: separate; border-spacing: 2px; font-variant-numeric: tabular-nums; }
+  .heatmap th { font-weight: 500; color: var(--muted); font-size: 12px; padding: 4px; }
+  .heatmap td { text-align: center; padding: 8px 4px; border-radius: 4px; font-size: 12px; }
+  .heatmap td.small { background: repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 4px, var(--surface) 4px, var(--surface) 8px); color: var(--muted); }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10; background: var(--text); color: var(--bg);
+    padding: 6px 8px; border-radius: 6px; font-size: 12px; opacity: 0; transition: opacity .1s; white-space: nowrap;
+  }
+
+  /* Pipeline */
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .controls label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .btn {
+    font: inherit; border-radius: 8px; padding: 7px 16px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .status { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--series-b); }
+  .dot.running, .dot.stopping { background: var(--warn); animation: pulse 1s infinite; }
+  .dot.success { background: var(--ok); }
+  .dot.failed, .dot.stopped { background: var(--bad); }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .step { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .step.done { color: var(--ok); border-color: var(--ok); }
+  .step.active { color: var(--warn); border-color: var(--warn); }
+  pre.log {
+    background: var(--log-bg); color: var(--log-text); border-radius: 8px; padding: 12px;
+    height: 420px; overflow: auto; margin: 0; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  pre.log .err { color: #ff8a8a; }
+  pre.log .okline { color: #7ee2a8; }
+
+  /* Data tables */
+  .table-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .table-wrap { overflow: auto; max-height: 560px; border: 1px solid var(--border); border-radius: 8px; }
+  table.data { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  table.data th, table.data td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  table.data th { position: sticky; top: 0; background: var(--surface-2); font-weight: 600; cursor: pointer; user-select: none; }
+  table.data td.num { text-align: right; }
+  table.data tr:hover td { background: var(--surface-2); }
+  input[type=search] {
+    font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); min-width: 200px;
+  }
+  a { color: var(--accent); }
+
+  .figures img { width: 100%; border-radius: 6px; background: #fff; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .list li span { color: var(--muted); white-space: nowrap; }
+  .empty { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title-row">
+    <div>
+      <h1>Enquête sur une maladie — Type 2 diabetes</h1>
+      <div class="subtitle">BRFSS 2022 (CDC) · descriptive analysis by age group and BMI category</div>
+    </div>
+    <div class="pills" id="dataset-pills"></div>
+  </div>
+  <nav id="tabs">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="pipeline">Run pipeline</button>
+    <button data-tab="data">Data tables</button>
+    <button data-tab="figures">Figures</button>
+    <button data-tab="history">Logs &amp; archives</button>
+  </nav>
+</header>
+
+<main>
+  <!-- Overview -->
+  <section id="tab-overview">
+    <div class="grid kpis" id="kpis"></div>
+    <div class="grid two">
+      <div class="card">
+        <h2>Type 2 diabetes prevalence by age group</h2>
+        <p class="hint">Share of respondents with Type 2 diabetes (vs. no diabetes) in each age group.</p>
+        <div id="chart-age"></div>
+      </div>
+      <div class="card">
+        <h2>BMI category distribution</h2>
+        <p class="hint">Percentage of each group falling into each BMI category.</p>
+        <div id="chart-bmi"></div>
+        <div class="legend">
+          <span><i style="background:var(--series-a)"></i>Type 2 diabetes</span>
+          <span><i style="background:var(--series-b)"></i>No diabetes</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Type 2 diabetes % by age × BMI category</h2>
+      <p class="hint">Hatched cells have fewer than 20 Type 2 cases and should be read with caution.</p>
+      <div style="overflow-x:auto"><table class="heatmap" id="heatmap"></table></div>
+    </div>
+  </section>
+
+  <!-- Pipeline -->
+  <section id="tab-pipeline" hidden>
+    <div class="card">
+      <h2>Run the full pipeline (<code>./run.sh</code>)</h2>
+      <p class="hint">Downloads/verifies the dataset, runs the analysis, generates graphs, runs tests and archives the results.</p>
+      <div class="controls">
+        <label><input type="checkbox" id="opt-force"> Force dataset download <code>-f</code></label>
+        <label><input type="checkbox" id="opt-skip"> Skip automated tests <code>-s</code></label>
+        <button class="btn primary" id="btn-run">Run</button>
+        <button class="btn" id="btn-stop" disabled>Stop</button>
+        <div class="status"><span class="dot" id="status-dot"></span><span id="status-text">Idle</span></div>
+      </div>
+      <div class="steps" id="steps"></div>
+      <pre class="log" id="log"><span class="empty">No run yet in this session. Press "Run" to start.</span></pre>
+    </div>
+  </section>
+
+  <!-- Data -->
+  <section id="tab-data" hidden>
+    <div class="card">
+      <div class="table-picker">
+        <select id="table-select" class="btn"></select>
+        <input type="search" id="table-filter" placeholder="Filter rows…">
+        <span class="subtitle" id="table-meta"></span>
+        <a id="table-download" style="margin-left:auto">Download CSV</a>
+      </div>
+      <div class="table-wrap"><table class="data" id="data-table"></table></div>
+    </div>
+  </section>
+
+  <!-- Figures -->
+  <section id="tab-figures" hidden>
+    <div class="grid two figures" id="figures"></div>
+  </section>
+
+  <!-- History -->
+  <section id="tab-history" hidden>
+    <div class="grid two">
+      <div class="card">
+        <h2>Run logs</h2>
+        <p class="hint">Click a log to view it.</p>
+        <ul class="list" id="logs-list"></ul>
+      </div>
+      <div class="card">
+        <h2>Result archives</h2>
+        <p class="hint">Created at the end of each successful run.</p>
+        <ul class="list" id="archives-list"></ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2 id="log-view-title">Log viewer</h2>
+      <pre class="log" id="log-view"><span class="empty">Select a log above.</span></pre>
+    </div>
+    <p style="margin-top:16px"><a href="/files/report" target="_blank">Open the final project report (PDF)</a></p>
+  </section>
+</main>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+"use strict";
+
+// --------------------------------------------------
+// Labels
+// --------------------------------------------------
+const AGE_LABELS = {
+  "01": "18–24", "02": "25–29", "03": "30–34", "04": "35–39", "05": "40–44",
+  "06": "45–49", "07": "50–54", "08": "55–59", "09": "60–64", "10": "65–69",
+  "11": "70–74", "12": "75–79", "13": "80+"
+};
+const BMI_LABELS = { "1": "Underweight", "2": "Normal", "3": "Overweight", "4": "Obese" };
+const TABLE_TITLES = {
+  "age_diabetes.csv": "Type 2 by age group",
+  "bmi_diabetes_comparison.csv": "BMI distribution comparison",
+  "age_bmi_diabetes_python.csv": "Age × BMI (Python)",
+  "age_bmi_diabetes.csv": "Age × BMI (AWK)"
+};
+const STEPS = [
+  ["Dataset is ready", "Dataset"],
+  ["Completed: Running diabetes analysis", "Analysis"],
+  ["Completed: Generating obesity-age graph", "Obesity graph"],
+  ["Completed: Generating BMI-age comparison graph", "BMI graph"],
+  ["Completed: Running automated tests|Automated tests skipped", "Tests"],
+  ["Archive created", "Archive"],
+  ["PROJECT PIPELINE COMPLETED SUCCESSFULLY", "Done"]
+];
+
+const $ = (id) => document.getElementById(id);
+const fmt = new Intl.NumberFormat("en-US");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ageCode = (c) => String(c).padStart(2, "0");
+
+let RESULTS = null;
+
+// --------------------------------------------------
+// Tabs
+// --------------------------------------------------
+$("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-tab]");
+  if (!btn) return;
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b === btn));
+  document.querySelectorAll("main > section").forEach((s) => { s.hidden = s.id !== "tab-" + btn.dataset.tab; });
+  try { localStorage.setItem("tab", btn.dataset.tab); } catch (_) {}
+});
+try {
+  const saved = localStorage.getItem("tab");
+  if (saved) document.querySelector(`#tabs button[data-tab="${saved}"]`)?.click();
+} catch (_) {}
+
+// --------------------------------------------------
+// Tooltip
+// --------------------------------------------------
+const tip = $("tooltip");
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const x = Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + "px";
+  tip.style.top = (e.clientY + 12) + "px";
+}
+function hideTip() { tip.style.opacity = 0; }
+document.addEventListener("mousemove", (e) => {
+  const t = e.target.closest("[data-tip]");
+  if (t) showTip(e, t.dataset.tip); else hideTip();
+});
+
+// --------------------------------------------------
+// Charts (plain SVG)
+// --------------------------------------------------
+function niceAxis(v) {
+  // Pick a round tick step (1, 2, 5 × 10^n) giving about 5 ticks
+  const raw = Math.max(v, 1) / 5;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map((m) => m * p).find((x) => x >= raw);
+  return { max: Math.ceil(v / step) * step, step };
+}
+
+function gridLines(m, W, ih, axis) {
+  let s = "";
+  for (let v = 0; v <= axis.max + 1e-9; v += axis.step) {
+    const y = m.t + ih - (v / axis.max) * ih;
+    s += `<line class="grid-line" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/>`;
+    s += `<text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${+v.toFixed(2)}%</text>`;
+  }
+  return s;
+}
+
+function verticalBars(el, items) {
+  const W = 520, H = 280, m = { t: 16, r: 8, b: 64, l: 36 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const axis = niceAxis(Math.max(...items.map((d) => d.value))), max = axis.max;
+  const bw = iw / items.length;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  s += gridLines(m, W, ih, axis);
+  items.forEach((d, i) => {
+    const h = (d.value / max) * ih, x = m.l + i * bw + bw * 0.15, y = m.t + ih - h;
+    s += `<rect class="bar-a" x="${x}" y="${y}" width="${bw * 0.7}" height="${h}" rx="2" data-tip="${esc(d.tip)}"/>`;
+    s += `<text class="value-label" x="${x + bw * 0.35}" y="${y - 4}" text-anchor="middle">${d.value.toFixed(1)}</text>`;
+    s += `<text x="${x + bw * 0.35}" y="${H - m.b + 14}" text-anchor="end" transform="rotate(-40 ${x + bw * 0.35} ${H - m.b + 14})">${esc(d.label)}</text>`;
+  });
+  s += `<text x="${m.l + iw / 2}" y="${H - 2}" text-anchor="middle">Age group (years)</text>`;
+  el.innerHTML = s + "</svg>";
+}
+
+function groupedBars(el, cats, a, b) {
+  const W = 520, H = 260, m = { t: 16, r: 8, b: 28, l: 36 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const axis = niceAxis(Math.max(...a.map((d) => d.value), ...b.map((d) => d.value))), max = axis.max;
+  const gw = iw / cats.length, bw = gw * 0.34;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  s += gridLines(m, W, ih, axis);
+  cats.forEach((c, i) => {
+    const gx = m.l + i * gw + gw * 0.14;
+    [[a[i], "bar-a", 0], [b[i], "bar-b", bw + 4]].forEach(([d, cls, off]) => {
+      const h = (d.value / max) * ih, y = m.t + ih - h;
+      s += `<rect class="${cls}" x="${gx + off}" y="${y}" width="${bw}" height="${h}" rx="2" data-tip="${esc(d.tip)}"/>`;
+      s += `<text class="value-label" x="${gx + off + bw / 2}" y="${y - 4}" text-anchor="middle">${d.value.toFixed(1)}</text>`;
+    });
+    s += `<text x="${gx + bw + 2}" y="${H - m.b + 16}" text-anchor="middle">${esc(c)}</text>`;
+  });
+  el.innerHTML = s + "</svg>";
+}
+
+// --------------------------------------------------
+// Overview
+// --------------------------------------------------
+function renderOverview() {
+  const t = RESULTS.tables;
+  const age = t["age_diabetes.csv"];
+  const bmi = t["bmi_diabetes_comparison.csv"];
+  const grid = t["age_bmi_diabetes_python.csv"] || t["age_bmi_diabetes.csv"];
+
+  // KPIs
+  const kpis = [];
+  if (age) {
+    const type2 = age.rows.reduce((s, r) => s + +r.type2_count, 0);
+    const none = age.rows.reduce((s, r) => s + +r.no_diabetes_count, 0);
+    const peak = age.rows.reduce((p, r) => (+r.type2_percent > +p.type2_percent ? r : p));
+    kpis.push(["Respondents analysed", fmt.format(type2 + none), "Type 2 + no diabetes"]);
+    kpis.push(["Type 2 diabetes cases", fmt.format(type2), `${(100 * type2 / (type2 + none)).toFixed(1)}% overall`]);
+    kpis.push(["Highest prevalence", `${(+peak.type2_percent).toFixed(1)}%`, `Age ${AGE_LABELS[ageCode(peak.age_code)]}`]);
+  }
+  if (bmi) {
+    const ob = (g) => bmi.rows.find((r) => r.group === g && r.category === "4");
+    const a = ob("type2"), b = ob("no_diabetes");
+    if (a && b) kpis.push(["Obese (BMI ≥ 30)", `${(+a.percentage).toFixed(1)}%`, `of Type 2 vs ${(+b.percentage).toFixed(1)}% without diabetes`]);
+  }
+  $("kpis").innerHTML = kpis.length
+    ? kpis.map(([l, v, s]) => `<div class="card kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="sub">${s}</div></div>`).join("")
+    : `<div class="card empty">No results yet. Run the pipeline to generate them.</div>`;
+
+  // Age chart
+  if (age) {
+    verticalBars($("chart-age"), age.rows.map((r) => {
+      const label = AGE_LABELS[ageCode(r.age_code)] || r.age_code;
+      return {
+        label, value: +r.type2_percent,
+        tip: `<b>${label}</b>: ${(+r.type2_percent).toFixed(2)}%<br>${fmt.format(r.type2_count)} Type 2 / ${fmt.format(+r.type2_count + +r.no_diabetes_count)} respondents`
+      };
+    }));
+  } else $("chart-age").innerHTML = `<p class="empty">age_diabetes.csv not found.</p>`;
+
+  // BMI chart
+  if (bmi) {
+    const cats = ["1", "2", "3", "4"];
+    const pick = (g) => cats.map((c) => {
+      const r = bmi.rows.find((x) => x.group === g && x.category === c) || { percentage: 0, count: 0 };
+      return { value: +r.percentage, tip: `<b>${g === "type2" ? "Type 2" : "No diabetes"} · ${BMI_LABELS[c]}</b><br>${(+r.percentage).toFixed(2)}% (${fmt.format(r.count)})` };
+    });
+    groupedBars($("chart-bmi"), cats.map((c) => BMI_LABELS[c]), pick("type2"), pick("no_diabetes"));
+  } else $("chart-bmi").innerHTML = `<p class="empty">bmi_diabetes_comparison.csv not found.</p>`;
+
+  // Heatmap
+  if (grid) {
+    const max = Math.max(...grid.rows.map((r) => +r.percentage));
+    const ages = [...new Set(grid.rows.map((r) => ageCode(r.age_code)))].sort();
+    let h = `<tr><th></th>${ages.map((a) => `<th>${AGE_LABELS[a] || a}</th>`).join("")}</tr>`;
+    for (const c of ["4", "3", "2", "1"]) {
+      h += `<tr><th style="text-align:right">${BMI_LABELS[c]}</th>`;
+      for (const a of ages) {
+        const r = grid.rows.find((x) => ageCode(x.age_code) === a && String(x.bmi_category) === c);
+        if (!r) { h += `<td></td>`; continue; }
+        const p = +r.percentage, k = p / max;
+        const tipTxt = `<b>${AGE_LABELS[a]} · ${BMI_LABELS[c]}</b><br>${p.toFixed(2)}% · ${fmt.format(r.type2_count)} / ${fmt.format(r.total)}${r.small_case_count === "YES" ? "<br>fewer than 20 cases" : ""}`;
+        if (r.small_case_count === "YES") {
+          h += `<td class="small" data-tip="${esc(tipTxt)}">${p.toFixed(1)}</td>`;
+        } else {
+          const bg = `color-mix(in srgb, var(--series-a) ${Math.round(12 + k * 88)}%, var(--surface))`;
+          const fg = k > 0.5 ? "#fff" : "var(--text)";
+          h += `<td style="background:${bg};color:${fg}" data-tip="${esc(tipTxt)}">${p.toFixed(1)}</td>`;
+        }
+      }
+      h += `</tr>`;
+    }
+    $("heatmap").innerHTML = h;
+  } else $("heatmap").innerHTML = `<tr><td class="empty">Age × BMI results not found.</td></tr>`;
+}
+
+// --------------------------------------------------
+// Data tables
+// --------------------------------------------------
+let sortState = { col: null, dir: 1 };
+
+function renderTablePicker() {
+  const sel = $("table-select");
+  const prev = sel.value;
+  sel.innerHTML = Object.keys(RESULTS.tables).map((n) => `<option value="${n}">${TABLE_TITLES[n] || n}</option>`).join("");
+  if (prev && RESULTS.tables[prev]) sel.value = prev;
+  renderTable();
+}
+
+function renderTable() {
+  const name = $("table-select").value;
+  const t = RESULTS.tables[name];
+  if (!t) { $("data-table").innerHTML = `<tr><td class="empty">No CSV results found.</td></tr>`; return; }
+  const q = $("table-filter").value.trim().toLowerCase();
+  let rows = t.rows.filter((r) => !q || Object.values(r).some((v) => String(v).toLowerCase().includes(q)));
+  if (sortState.col && t.columns.includes(sortState.col)) {
+    const c = sortState.col;
+    rows = [...rows].sort((a, b) => {
+      const x = parseFloat(a[c]), y = parseFloat(b[c]);
+      const cmp = !isNaN(x) && !isNaN(y) ? x - y : String(a[c]).localeCompare(String(b[c]));
+      return cmp * sortState.dir;
+    });
+  }
+  const isNum = (v) => v !== "" && !isNaN(v);
+  const decorate = (col, v) => {
+    if (col === "age_code") return `${v} <span class="subtitle">${AGE_LABELS[ageCode(v)] || ""}</span>`;
+    if (col === "bmi_category" || col === "category") return `${v} <span class="subtitle">${BMI_LABELS[v] || ""}</span>`;
+    return esc(v);
+  };
+  $("data-table").innerHTML =
+    `<thead><tr>${t.columns.map((c) => `<th data-col="${esc(c)}">${esc(c)}${sortState.col === c ? (sortState.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead>` +
+    `<tbody>${rows.map((r) => `<tr>${t.columns.map((c) => `<td class="${isNum(r[c]) && c !== "age_code" && c !== "bmi_category" && c !== "category" ? "num" : ""}">${decorate(c, r[c])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  $("table-meta").textContent = `${rows.length} of ${t.rows.length} rows · updated ${t.modified.replace("T", " ")}`;
+  $("table-download").href = `/files/results/${encodeURIComponent(name)}`;
+}
+
+$("table-select").addEventListener("change", () => { sortState = { col: null, dir: 1 }; renderTable(); });
+$("table-filter").addEventListener("input", renderTable);
+$("data-table").addEventListener("click", (e) => {
+  const th = e.target.closest("th[data-col]");
+  if (!th) return;
+  sortState = { col: th.dataset.col, dir: sortState.col === th.dataset.col ? -sortState.dir : 1 };
+  renderTable();
+});
+
+// --------------------------------------------------
+// Figures, logs, archives
+// --------------------------------------------------
+function sizeLabel(n) {
+  if (n > 1e6) return (n / 1e6).toFixed(1) + " MB";
+  if (n > 1e3) return (n / 1e3).toFixed(0) + " KB";
+  return n + " B";
+}
+
+function renderFigures() {
+  const imgs = RESULTS.images;
+  $("figures").innerHTML = imgs.length
+    ? imgs.map((i) => `<div class="card"><h2>${esc(i.name)}</h2><p class="hint">Generated ${i.modified.replace("T", " ")}</p>
+        <a href="/files/results/${encodeURIComponent(i.name)}" target="_blank"><img src="/files/results/${encodeURIComponent(i.name)}?t=${encodeURIComponent(i.modified)}" alt="${esc(i.name)}"></a></div>`).join("")
+    : `<div class="card empty">No figures yet. Run the pipeline to generate them.</div>`;
+}
+
+function renderHistory() {
+  $("logs-list").innerHTML = RESULTS.logs.length
+    ? RESULTS.logs.map((l) => `<li><a href="#" data-log="${esc(l.name)}">${esc(l.name)}</a><span>${sizeLabel(l.size)}</span></li>`).join("")
+    : `<li class="empty">No logs yet.</li>`;
+  $("archives-list").innerHTML = RESULTS.archives.length
+    ? RESULTS.archives.map((a) => `<li><a href="/files/archive/${encodeURIComponent(a.name)}">${esc(a.name)}</a><span>${sizeLabel(a.size)}</span></li>`).join("")
+    : `<li class="empty">No archives yet.</li>`;
+}
+
+$("logs-list").addEventListener("click", async (e) => {
+  const a = e.target.closest("a[data-log]");
+  if (!a) return;
+  e.preventDefault();
+  const res = await fetch(`/files/logs/${encodeURIComponent(a.dataset.log)}`);
+  $("log-view-title").textContent = a.dataset.log;
+  $("log-view").innerHTML = res.ok ? colorizeLog((await res.text()).split("\n")) : `<span class="err">Could not load log.</span>`;
+});
+
+function renderPills() {
+  const d = RESULTS.dataset;
+  $("dataset-pills").innerHTML =
+    `<span class="pill ${d.asc ? "ok" : "bad"}">${d.asc ? "✓" : "✗"} LLCP2022.ASC</span>` +
+    `<span class="pill ${d.zip ? "ok" : "bad"}">${d.zip ? "✓" : "✗"} ZIP archive</span>`;
+}
+
+async function loadResults() {
+  const res = await fetch("/api/results");
+  RESULTS = await res.json();
+  renderPills();
+  renderOverview();
+  renderTablePicker();
+  renderFigures();
+  renderHistory();
+}
+
+// --------------------------------------------------
+// Pipeline runner
+// --------------------------------------------------
+let logOffset = 0;
+let pollTimer = null;
+let logLines = [];
+
+function colorizeLog(lines) {
+  return lines.map((l) => {
+    const e = esc(l);
+    if (/ERROR|FAIL|Traceback|Interrupted/.test(l)) return `<span class="err">${e}</span>`;
+    if (/Completed:|SUCCESSFULLY|\.\.\. ok$|^OK/.test(l)) return `<span class="okline">${e}</span>`;
+    return e;
+  }).join("\n");
+}
+
+function renderSteps(state) {
+  const text = logLines.join("\n");
+  let firstPending = true;
+  $("steps").innerHTML = STEPS.map(([pattern, label]) => {
+    const done = new RegExp(pattern).test(text);
+    let cls = done ? "done" : "";
+    if (!done && firstPending && (state === "running" || state === "stopping")) { cls = "active"; firstPending = false; }
+    else if (!done) firstPending = false;
+    return `<span class="step ${cls}">${done ? "✓ " : ""}${label}</span>`;
+  }).join("");
+}
+
+const STATUS_TEXT = {
+  idle: "Idle", running: "Running…", stopping: "Stopping…",
+  success: "Completed successfully", failed: "Failed", stopped: "Stopped"
+};
+
+async function poll() {
+  let s;
+  try {
+    s = await (await fetch(`/api/status?offset=${logOffset}`)).json();
+  } catch (_) {
+    $("status-text").textContent = "GUI server unreachable";
+    return schedule(2000);
+  }
+  if (s.offset < logOffset) { logLines = []; } // a new run started elsewhere
+  logOffset = s.offset;
+  if (s.lines.length) {
+    logLines.push(...s.lines);
+    const log = $("log");
+    const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.innerHTML = colorizeLog(logLines);
+    if (atBottom) log.scrollTop = log.scrollHeight;
+  }
+  const busy = s.state === "running" || s.state === "stopping";
+  $("status-dot").className = "dot " + s.state;
+  $("status-text").textContent = STATUS_TEXT[s.state] + (s.exit_code != null && s.state !== "success" ? ` (exit ${s.exit_code})` : "");
+  $("btn-run").disabled = busy;
+  $("btn-stop").disabled = s.state !== "running";
+  $("opt-force").disabled = $("opt-skip").disabled = busy;
+  if (s.state !== "idle") renderSteps(s.state);
+
+  // Reload charts/tables once a run has just finished
+  if (wasBusy && !busy) loadResults();
+  wasBusy = busy;
+  schedule(busy ? 500 : 3000);
+}
+let wasBusy = false;
+function schedule(ms) {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(poll, ms);
+}
+
+async function post(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  if (!res.ok) alert((await res.json()).error || "Request failed");
+  return res.ok;
+}
+
+$("btn-run").addEventListener("click", async () => {
+  if ($("opt-force").checked && !confirm("Force download will re-download the full CDC dataset (~1 GB unzipped). Continue?")) return;
+  if (await post("/api/run", { force_download: $("opt-force").checked, skip_tests: $("opt-skip").checked })) {
+    logOffset = 0; logLines = [];
+    $("log").innerHTML = "";
+    schedule(0);
+  }
+});
+$("btn-stop").addEventListener("click", () => post("/api/stop").then(() => schedule(0)));
+
+// --------------------------------------------------
+// Start
+// --------------------------------------------------
+loadResults().catch(() => { $("kpis").innerHTML = `<div class="card empty">Could not load results.</div>`; });
+poll();
+</script>
+</body>
+</html>

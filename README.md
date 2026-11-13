@@ -299,6 +299,7 @@ enquete-maladie/
 ├── logs/
 ├── archive/
 ├── cron/
+├── gui/
 ├── run.sh
 ├── requirements.txt
 ├── SOURCES.md
@@ -309,6 +310,7 @@ enquete-maladie/
 - `data/`: CDC dataset files (excluded from Git).
 - `checksums/`: Dataset integrity verification.
 - `cron/`: Example cron job to run the pipeline automatically.
+- `gui/`: Local graphical interface (see section 10).
 - `docs/`: CDC variable documentation.
 - `results/`: Generated CSV files and figures.
 - `scripts/`: Python analysis and visualization scripts.
@@ -483,6 +485,26 @@ This configuration runs the pipeline every day at 08:00. Standard output and err
 **Why the `PATH` line:** cron starts jobs with a minimal `PATH`, so `python3`, `curl` or `sha256sum` may not be found and the job would fail silently. Add the directory where your Python 3.11+ is installed if it is not listed (e.g. `/opt/homebrew/bin` on macOS with Homebrew; `which python3` shows it).
 
 **Note:** Git Bash on Windows does not provide a cron service by itself; use WSL.
+
+### Graphical interface (optional)
+
+A local graphical interface lets you run the pipeline and explore the results without the terminal. It uses only the Python standard library:
+
+```bash
+python3 gui/server.py
+```
+
+Your browser opens at `http://127.0.0.1:8765/`. Use `--port` to choose another port and `--no-browser` to skip opening the browser. The server only listens on your own machine. Press `Ctrl+C` in the terminal to quit.
+
+The interface has five tabs:
+
+- **Overview:** key figures, Type 2 prevalence by age group, BMI distribution comparison, and an age × BMI heatmap (cells with fewer than 20 cases are hatched).
+- **Run pipeline:** starts `./run.sh` with the `-f` and `-s` options, shows the log live with step progress, and can stop the run. Stopping behaves like `Ctrl+C`, so temporary files are cleaned up.
+- **Data tables:** sortable, filterable views of each CSV file in `results/`, with download links.
+- **Figures:** the PNG graphs in `results/`.
+- **Logs & archives:** previous run logs, `.tar.gz` result archives, and the final report.
+
+The pipeline is started with the same `python3` that is first on your `PATH`, so it needs the dependencies from `requirements.txt` installed.
 
 ## 11. Limitations and Responsible Interpretation
 
