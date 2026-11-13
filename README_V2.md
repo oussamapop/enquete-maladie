@@ -124,10 +124,12 @@ Output goes to `logs/cron.log`.
 
 ## 3. Work distribution (répartition du travail)
 
+**Shared by all members:** choice of the topic and dataset, documentation (`README.md`, `SOURCES.md`), report (`rapport.pdf`) and testing.
+
 | Member | Contributions |
 | --- | --- |
-| Oussama Larbi | Topic and dataset choice; data exploration (Bash/AWK); Python analysis and figures; automated tests; first `run.sh` pipeline; checksum; documentation (`README.md`, `SOURCES.md`); report (`rapport.pdf`) |
-| Massil | Cross-platform compatibility (Python auto-detection, checksum tool fallback, file name with trailing space); `trap` cleanup on interruption; read-only raw data; verbose mode (`-v`); runnable cron task; graphical interface (`gui/`); pipeline testing on a clean machine |
+| Oussama Larbi | Data exploration (Bash/AWK); Python analysis and figures; automated tests; first `run.sh` pipeline; checksum |
+| Massil | Cross-platform compatibility (Python auto-detection, checksum tool fallback, file name with trailing space); `trap` cleanup on interruption; read-only raw data; verbose mode (`-v`); runnable cron task; graphical interface (`gui/`) |
 | _Member 3_ | _to complete_ |
 | _Member 4_ | _to complete_ |
 | _Member 5_ | _to complete_ |
