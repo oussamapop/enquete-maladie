@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# Stop if any command fails
-set -euo pipefail
+# Stop at the first failing command (-e), also inside functions (-E),
+# on unset variables (-u) and on a failure anywhere in a pipe (pipefail)
+set -Eeuo pipefail
 
 # --------------------------------------------------
 # 1. Project configuration
@@ -61,11 +62,15 @@ require_command() {
 }
 
 # Find a Python 3.11+ that has the dependencies.
-# The command name differs between systems (python3, python3.12, python...).
+# The project virtual environment (.venv, see README) is tried first;
+# otherwise the command name differs between systems (python3, python3.12, python...).
 find_python() {
     local candidate first_ok=""
 
-    for candidate in python3 python3.14 python3.13 python3.12 python3.11 python; do
+    for candidate in \
+        "$PROJECT_DIR/.venv/bin/python" \
+        "$PROJECT_DIR/.venv/Scripts/python.exe" \
+        python3 python3.14 python3.13 python3.12 python3.11 python; do
         command -v "$candidate" >/dev/null 2>&1 || continue
 
         # Skip versions older than 3.11
@@ -80,7 +85,7 @@ find_python() {
     done
 
     if [[ -n "$first_ok" ]]; then
-        die "Python dependencies are missing. Run: $first_ok -m pip install -r requirements.txt"
+        die "Python dependencies are missing. Create the environment described in README.md (python3 -m venv .venv, then pip install -r requirements.txt)."
     fi
 
     die "Python 3.11 or newer is required but was not found. Install it from https://www.python.org/downloads/"
@@ -107,17 +112,34 @@ on_interrupt() {
     exit 130
 }
 
+# Called on any failing command (ERR): clear message, then stop with its exit code
+on_error() {
+    local status="$1"
+    local line="$2"
+    local command="$3"
+
+    log "ERROR: command failed with exit code $status at line $line: $command"
+    exit "$status"
+}
+
 trap on_interrupt INT TERM
 trap cleanup EXIT
+trap 'on_error $? $LINENO "$BASH_COMMAND"' ERR
 
 show_help() {
     cat <<HELP
 Usage: ./run.sh [OPTIONS]
 
+Runs the whole pipeline: download and check the BRFSS 2022 data,
+shell filtering, Python analysis, statistics, figures, tests, archive.
+
 Options:
+  -h    Show this help
   -f    Force dataset download
   -s    Skip automated tests
   -v    Verbose: show each command as it runs
+
+Exit codes: 0 success, 1 error, 130 interrupted (Ctrl+C)
 HELP
 }
 
@@ -209,7 +231,7 @@ run_step() {
     shift
 
     log "$description"
-    "$@"
+    "$@" || die "Step failed: $description"
     log "Completed: $description"
 }
 
@@ -300,16 +322,30 @@ log "Using Python: $(command -v "$PYTHON") ($("$PYTHON" --version 2>&1))"
 prepare_dataset
 
 # --------------------------------------------------
-# 8. Run Python analysis
+# 8. Shell filtering of the raw data (cut | grep | awk | sort | uniq)
 # --------------------------------------------------
 
 cd "$PROJECT_DIR"
+
+run_step "Filtering raw data with shell tools" \
+    bash scripts/shell_filter.sh "$ASC_FILE" "$RESULTS_DIR"
+
+# --------------------------------------------------
+# 9. Run Python analysis
+# --------------------------------------------------
 
 run_step "Running diabetes analysis" \
     "$PYTHON" scripts/reproduce_age_bmi_diabetes.py --input "$ASC_FILE" --output "$RESULTS_DIR/age_bmi_diabetes_python.csv" --chunk-size 50000
 
 # --------------------------------------------------
-# 9. Generate visualizations
+# 10. Statistical analysis (confidence intervals, chi-square)
+# --------------------------------------------------
+
+run_step "Computing statistics" \
+    "$PYTHON" scripts/stats_analysis.py --input "$RESULTS_DIR/age_bmi_diabetes_python.csv" --output "$RESULTS_DIR/stats.json"
+
+# --------------------------------------------------
+# 11. Generate visualizations
 # --------------------------------------------------
 
 run_step "Generating obesity-age graph" \
@@ -319,7 +355,7 @@ run_step "Generating BMI-age comparison graph" \
     "$PYTHON" scripts/plot_bmi_age_comparison.py
 
 # --------------------------------------------------
-# 10. Display age-group summary using a shell pipeline
+# 12. Display age-group summary using a shell pipeline
 # --------------------------------------------------
 
 log "Counting result rows by age group..."
@@ -330,7 +366,7 @@ tail -n +2 "$RESULTS_DIR/age_bmi_diabetes_python.csv" \
     | uniq -c
 
 # --------------------------------------------------
-# 11. Run automated tests
+# 13. Run automated tests
 # --------------------------------------------------
 
 if [[ "$SKIP_TESTS" == false ]]; then
@@ -343,7 +379,7 @@ else
 fi
 
 # --------------------------------------------------
-# 12. Create dated results archive
+# 14. Create dated results archive
 # --------------------------------------------------
 
 ARCHIVE_FILE="$ARCHIVE_DIR/results_$(date '+%Y%m%d_%H%M%S').tar.gz"
@@ -356,7 +392,7 @@ tar -czf "$ARCHIVE_FILE" -C "$PROJECT_DIR" results \
 log "Archive created: $ARCHIVE_FILE"
 
 # --------------------------------------------------
-# 13. Finish
+# 15. Finish
 # --------------------------------------------------
 
 log "========================================"

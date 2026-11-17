@@ -1,8 +1,8 @@
-
+#!/usr/bin/env python3
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Lire les résultats déjà calculés avec Bash
+# Lire les résultats calculés par reproduce_age_bmi_diabetes.py
 df = pd.read_csv("results/age_bmi_diabetes_python.csv")
 
 # Garder la catégorie BMI 4 (obésité)
